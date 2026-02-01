@@ -1,0 +1,55 @@
+---
+# Manage the openclaw systemd service on a remote instance
+# Usage: ansible-playbook openclaw-service.yml -i "IP," --private-key=KEY -e "openclaw_state=started"
+
+- name: Manage OpenClaw service
+  hosts: all
+  remote_user: root
+  gather_facts: false
+
+  vars:
+    openclaw_state: started        # 'started' or 'stopped'
+    openclaw_enabled: true         # whether to enable/disable at boot
+
+  tasks:
+    - name: Check if openclaw service unit exists
+      ansible.builtin.stat:
+        path: /etc/systemd/system/openclaw.service
+      register: openclaw_unit_file
+
+    - name: Check user-level systemd unit
+      ansible.builtin.stat:
+        path: /home/roboclaw/.config/systemd/user/openclaw.service
+      register: openclaw_user_unit_file
+      when: not openclaw_unit_file.stat.exists
+
+    - name: Fail gracefully if service unit not found
+      ansible.builtin.fail:
+        msg: >
+          The openclaw systemd service unit was not found at
+          /etc/systemd/system/openclaw.service or
+          /home/roboclaw/.config/systemd/user/openclaw.service.
+          Please run 'openclaw onboard' first to create the service.
+      when: >
+        not openclaw_unit_file.stat.exists and
+        (openclaw_user_unit_file is not defined or not openclaw_user_unit_file.stat.exists)
+
+    - name: Manage openclaw system service
+      ansible.builtin.systemd:
+        name: openclaw
+        state: "{{ openclaw_state }}"
+        enabled: "{{ openclaw_enabled }}"
+      when: openclaw_unit_file.stat.exists
+
+    - name: Manage openclaw user service
+      ansible.builtin.systemd:
+        name: openclaw
+        state: "{{ openclaw_state }}"
+        enabled: "{{ openclaw_enabled }}"
+        scope: user
+      become: true
+      become_user: roboclaw
+      when: >
+        not openclaw_unit_file.stat.exists and
+        openclaw_user_unit_file is defined and
+        openclaw_user_unit_file.stat.exists

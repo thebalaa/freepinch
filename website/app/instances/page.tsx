@@ -21,6 +21,7 @@ export default function InstancesPage() {
   const [instanceToDelete, setInstanceToDelete] = useState<string | null>(null)
   const [toasts, setToasts] = useState<ToastMessage[]>([])
   const [tunnelStatuses, setTunnelStatuses] = useState<Record<string, 'connected' | 'disconnected' | 'connecting' | 'disconnecting'>>({})
+  const [serviceStatuses, setServiceStatuses] = useState<Record<string, 'active' | 'inactive' | 'failed' | 'unknown' | 'loading'>>({})
   const [reconfiguringInstance, setReconfiguringInstance] = useState<string | null>(null)
   const [reconfigureLog, setReconfigureLog] = useState<string[]>([])
   const [reconfigureModalOpen, setReconfigureModalOpen] = useState(false)
@@ -68,6 +69,7 @@ export default function InstancesPage() {
 
       // Load tunnel statuses for active, onboarded instances
       await loadTunnelStatuses(instanceList)
+      await loadServiceStatuses(instanceList)
     } catch (error) {
       console.error('Failed to load instances:', error)
     } finally {
@@ -89,6 +91,22 @@ export default function InstancesPage() {
       }
     }
     setTunnelStatuses(statuses)
+  }
+
+  const loadServiceStatuses = async (instanceList: Instance[]) => {
+    const statuses: Record<string, 'active' | 'inactive' | 'failed' | 'unknown'> = {}
+    for (const inst of instanceList) {
+      if (inst.status === 'active' && inst.onboardingCompleted) {
+        try {
+          const res = await fetch(`/api/instances/${inst.name}/service`)
+          const data = await res.json()
+          statuses[inst.name] = data.status || 'unknown'
+        } catch {
+          statuses[inst.name] = 'unknown'
+        }
+      }
+    }
+    setServiceStatuses(statuses)
   }
 
   const handleSetupClick = async (instanceName: string) => {
@@ -233,6 +251,41 @@ export default function InstancesPage() {
     }
   }
 
+  const handleServiceToggle = async (instanceName: string) => {
+    const currentStatus = serviceStatuses[instanceName]
+    const action = currentStatus === 'active' ? 'stop' : 'start'
+
+    // Optimistic: set to loading
+    setServiceStatuses(prev => ({ ...prev, [instanceName]: 'loading' }))
+
+    try {
+      const res = await fetch(`/api/instances/${instanceName}/service`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action }),
+      })
+
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || `Failed to ${action} service`)
+      }
+
+      const data = await res.json()
+      setServiceStatuses(prev => ({ ...prev, [instanceName]: data.status }))
+      addToast(
+        `OpenClaw service ${action === 'start' ? 'started' : 'stopped'} on ${instanceName}`,
+        'success'
+      )
+    } catch (error) {
+      // Revert to previous status on error
+      setServiceStatuses(prev => ({ ...prev, [instanceName]: currentStatus || 'unknown' }))
+      addToast(
+        `Failed to ${action} service: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        'error'
+      )
+    }
+  }
+
   const handleReconfigureClick = async (instanceName: string) => {
     setReconfiguringInstance(instanceName)
     setReconfigureLog([])
@@ -368,8 +421,10 @@ export default function InstancesPage() {
                     onDeleteClick={handleDeleteClick}
                     onTunnelToggle={handleTunnelToggle}
                     onReconfigureClick={handleReconfigureClick}
+                    onServiceToggle={handleServiceToggle}
                     isDeleting={deletingInstance === instance.name}
                     tunnelStatus={tunnelStatuses[instance.name] || 'disconnected'}
+                    serviceStatus={serviceStatuses[instance.name] || 'unknown'}
                   />
                 ))}
               </div>

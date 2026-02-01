@@ -99,6 +99,60 @@ case "${1:-provision}" in
             --private-key="${KEY_FILE}" \
             "$@"
         ;;
+    service)
+        shift
+        INSTANCE_NAME="${1:?Usage: run-hetzner.sh service <instance-name> <started|stopped> [--enable|--disable]}"
+        shift
+        OPENCLAW_STATE="${1:?Usage: run-hetzner.sh service <instance-name> <started|stopped>}"
+        shift
+
+        # Default: enable if starting, disable if stopping
+        OPENCLAW_ENABLED="true"
+        if [ "$OPENCLAW_STATE" = "stopped" ]; then
+            OPENCLAW_ENABLED="false"
+        fi
+
+        # Override with explicit flag
+        while [ $# -gt 0 ]; do
+            case "$1" in
+                --enable) OPENCLAW_ENABLED="true"; shift ;;
+                --disable) OPENCLAW_ENABLED="false"; shift ;;
+                *) shift ;;
+            esac
+        done
+
+        # Read IP and SSH key from instance artifact
+        ARTIFACT="./instances/${INSTANCE_NAME}.yml"
+        if [ ! -f "$ARTIFACT" ]; then
+            echo "Error: Instance artifact not found: $ARTIFACT"
+            exit 1
+        fi
+
+        IP=$(grep '^\s*ip:' "$ARTIFACT" | head -1 | awk '{print $2}')
+        KEY_FILE=$(grep '^\s*key_file:' "$ARTIFACT" | head -1 | awk '{print $2}' | tr -d '"' | sed 's/^"\(.*\)"$/\1/')
+
+        if [ -z "$IP" ]; then
+            echo "Error: Could not extract IP from $ARTIFACT"
+            exit 1
+        fi
+
+        if [ -z "$KEY_FILE" ]; then
+            echo "Error: Could not extract key_file from $ARTIFACT"
+            exit 1
+        fi
+
+        echo "🔧 Managing openclaw service: $INSTANCE_NAME"
+        echo "   Action: $OPENCLAW_STATE"
+        echo "   Enabled: $OPENCLAW_ENABLED"
+        echo "   IP: $IP"
+        echo ""
+
+        ansible-playbook openclaw-service.yml \
+            -i "${IP}," \
+            --private-key="${KEY_FILE}" \
+            -e "openclaw_state=${OPENCLAW_STATE}" \
+            -e "openclaw_enabled=${OPENCLAW_ENABLED}"
+        ;;
     provision|*)
         [ $# -gt 0 ] && shift
         echo "⚡ Provisioning and installing RoboClaw (~2-3 minutes)..."

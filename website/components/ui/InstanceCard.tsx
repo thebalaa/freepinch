@@ -3,7 +3,8 @@
 import { type Instance } from '@/lib/types'
 import Badge from './Badge'
 import Button from './Button'
-import { Copy, Server, CheckCircle2, AlertCircle, Terminal, Trash2, Loader2, Plug, Unplug, RefreshCw, ExternalLink } from 'lucide-react'
+import { Copy, Server, CheckCircle2, AlertCircle, Terminal, Trash2, Loader2, Plug, Unplug, RefreshCw, ExternalLink, Power, MoreVertical } from 'lucide-react'
+import DropdownMenu from './DropdownMenu'
 
 interface InstanceCardProps {
   instance: Instance
@@ -11,11 +12,13 @@ interface InstanceCardProps {
   onDeleteClick: (instanceName: string) => void
   onTunnelToggle: (instanceName: string) => void
   onReconfigureClick: (instanceName: string) => void
+  onServiceToggle: (instanceName: string) => void
   isDeleting?: boolean
   tunnelStatus?: 'connected' | 'disconnected' | 'connecting' | 'disconnecting'
+  serviceStatus?: 'active' | 'inactive' | 'failed' | 'unknown' | 'loading'
 }
 
-export default function InstanceCard({ instance, onSetupClick, onDeleteClick, onTunnelToggle, onReconfigureClick, isDeleting = false, tunnelStatus = 'disconnected' }: InstanceCardProps) {
+export default function InstanceCard({ instance, onSetupClick, onDeleteClick, onTunnelToggle, onReconfigureClick, onServiceToggle, isDeleting = false, tunnelStatus = 'disconnected', serviceStatus = 'unknown' }: InstanceCardProps) {
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text)
   }
@@ -58,7 +61,24 @@ export default function InstanceCard({ instance, onSetupClick, onDeleteClick, on
             </div>
           </div>
         </div>
-        <Badge variant={getStatusVariant()}>{getStatusLabel()}</Badge>
+        <div className="flex items-center gap-2">
+          <Badge variant={getStatusVariant()}>{getStatusLabel()}</Badge>
+          {instance.status === 'active' && (
+            <DropdownMenu
+              variant="minimal"
+              trigger={<MoreVertical className="w-4 h-4 text-gray-400" />}
+              items={[
+                {
+                  label: isDeleting ? 'Deleting...' : 'Delete Instance',
+                  onClick: () => onDeleteClick(instance.name),
+                  icon: isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />,
+                  variant: 'danger',
+                  disabled: isDeleting,
+                },
+              ]}
+            />
+          )}
+        </div>
       </div>
 
       {/* Server Info */}
@@ -97,17 +117,62 @@ export default function InstanceCard({ instance, onSetupClick, onDeleteClick, on
         </div>
       </div>
 
+      {/* OpenClaw Service Status */}
+      {instance.status === 'active' && instance.onboardingCompleted && (
+        <div className="flex items-center justify-between bg-terminal-bg rounded-lg px-3 py-2 mb-4">
+          <div className="flex items-center gap-2">
+            <Power className="w-4 h-4 text-gray-400" />
+            <span className="text-sm text-gray-300">OpenClaw Service</span>
+            {serviceStatus === 'failed' && (
+              <span className="text-xs text-terminal-error">(failed)</span>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-500">
+              {serviceStatus === 'loading' ? '' :
+               serviceStatus === 'active' ? 'Running' :
+               serviceStatus === 'failed' ? 'Failed' :
+               'Stopped'}
+            </span>
+            <button
+              role="switch"
+              aria-checked={serviceStatus === 'active'}
+              aria-label="Toggle OpenClaw service"
+              onClick={() => onServiceToggle(instance.name)}
+              disabled={serviceStatus === 'loading' || serviceStatus === 'unknown'}
+              className={`
+                relative inline-flex items-center rounded-full transition-colors duration-200 w-9 h-5
+                focus:outline-none focus:ring-2 focus:ring-accent-purple/50 focus:ring-offset-2 focus:ring-offset-background
+                disabled:opacity-50 disabled:cursor-not-allowed
+                ${serviceStatus === 'active' ? 'bg-terminal-success' : 'bg-white/20'}
+              `}
+            >
+              <span
+                className={`
+                  inline-block rounded-full bg-white transition-transform duration-200 shadow-sm h-4 w-4
+                  ${serviceStatus === 'active' ? 'translate-x-4' : 'translate-x-0.5'}
+                `}
+              />
+              {serviceStatus === 'loading' && (
+                <span className="absolute inset-0 flex items-center justify-center">
+                  <Loader2 className="w-3 h-3 text-white animate-spin" />
+                </span>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Provisioned At */}
       <div className="text-xs text-gray-500 mb-4">
         Provisioned {new Date(instance.provisionedAt).toLocaleString()}
       </div>
 
       {/* Actions */}
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2 justify-center">
         {instance.status === 'active' && !instance.onboardingCompleted && (
           <Button
             variant="primary"
-            className="flex-1"
             onClick={() => onSetupClick(instance.name)}
           >
             <Terminal className="w-4 h-4 mr-2" />
@@ -116,33 +181,57 @@ export default function InstanceCard({ instance, onSetupClick, onDeleteClick, on
         )}
 
         {instance.status === 'active' && instance.onboardingCompleted && (
-          <button
-            onClick={() => onTunnelToggle(instance.name)}
-            disabled={tunnelStatus === 'connecting' || tunnelStatus === 'disconnecting'}
-            className={`flex-1 px-4 py-2 border rounded-lg transition-colors text-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${
-              tunnelStatus === 'connected'
-                ? 'bg-green-500/10 hover:bg-green-500/20 border-green-500/30 hover:border-green-500/50 text-green-400'
-                : 'bg-accent-purple/10 hover:bg-accent-purple/20 border-accent-purple/30 hover:border-accent-purple/50 text-accent-purple'
-            }`}
-            title={tunnelStatus === 'connected' ? 'Disconnect tunnel' : 'Connect tunnel'}
-          >
-            {tunnelStatus === 'connecting' || tunnelStatus === 'disconnecting' ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                {tunnelStatus === 'connecting' ? 'Connecting...' : 'Disconnecting...'}
-              </>
-            ) : tunnelStatus === 'connected' ? (
-              <>
-                <Unplug className="w-4 h-4" />
-                Disconnect
-              </>
-            ) : (
-              <>
-                <Plug className="w-4 h-4" />
-                Connect
-              </>
+          <>
+            <button
+              onClick={() => onTunnelToggle(instance.name)}
+              disabled={tunnelStatus === 'connecting' || tunnelStatus === 'disconnecting'}
+              className={`px-4 py-2 border rounded-lg transition-colors text-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap ${
+                tunnelStatus === 'connected'
+                  ? 'bg-green-500/10 hover:bg-green-500/20 border-green-500/30 hover:border-green-500/50 text-green-400'
+                  : 'bg-accent-purple/10 hover:bg-accent-purple/20 border-accent-purple/30 hover:border-accent-purple/50 text-accent-purple'
+              }`}
+              title={tunnelStatus === 'connected' ? 'Disconnect tunnel' : 'Connect tunnel'}
+            >
+              {tunnelStatus === 'connecting' || tunnelStatus === 'disconnecting' ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  {tunnelStatus === 'connecting' ? 'Connecting...' : 'Disconnecting...'}
+                </>
+              ) : tunnelStatus === 'connected' ? (
+                <>
+                  <Unplug className="w-4 h-4" />
+                  Disconnect
+                </>
+              ) : (
+                <>
+                  <Plug className="w-4 h-4" />
+                  Connect
+                </>
+              )}
+            </button>
+
+            {tunnelStatus === 'connected' && (
+              <a
+                href="http://localhost:18789"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-2 bg-accent-cyan/10 hover:bg-accent-cyan/20 border border-accent-cyan/30 hover:border-accent-cyan/50 text-accent-cyan hover:text-accent-cyan rounded-lg transition-colors text-sm flex items-center gap-2 whitespace-nowrap"
+                title="Open Gateway"
+              >
+                <ExternalLink className="w-4 h-4" />
+                Gateway
+              </a>
             )}
-          </button>
+
+            <button
+              onClick={() => onReconfigureClick(instance.name)}
+              className="px-4 py-2 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 hover:border-blue-500/50 text-blue-400 hover:text-blue-300 rounded-lg transition-colors text-sm flex items-center gap-2 whitespace-nowrap"
+              title="Reconfigure instance"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Reconfigure
+            </button>
+          </>
         )}
 
         {instance.status === 'deleted' && (
@@ -150,57 +239,6 @@ export default function InstanceCard({ instance, onSetupClick, onDeleteClick, on
             <AlertCircle className="w-4 h-4" />
             <span>Instance deleted</span>
           </div>
-        )}
-
-        {instance.status === 'active' && (
-          <>
-            {tunnelStatus === 'connected' && (
-              <a
-                href="http://localhost:18789"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-4 py-2 bg-accent-cyan/10 hover:bg-accent-cyan/20 border border-accent-cyan/30 hover:border-accent-cyan/50 text-accent-cyan hover:text-accent-cyan rounded-lg transition-colors text-sm flex items-center gap-2"
-                title="Open Gateway"
-              >
-                <ExternalLink className="w-4 h-4" />
-                Gateway
-              </a>
-            )}
-            <button
-              onClick={() => onReconfigureClick(instance.name)}
-              className="px-4 py-2 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 hover:border-blue-500/50 text-blue-400 hover:text-blue-300 rounded-lg transition-colors text-sm flex items-center gap-2"
-              title="Reconfigure instance"
-            >
-              <RefreshCw className="w-4 h-4" />
-              Reconfigure
-            </button>
-            <button
-              onClick={() => copyToClipboard(sshCommand)}
-              className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg transition-colors text-sm flex items-center gap-2"
-              title="Copy SSH command"
-            >
-              <Copy className="w-4 h-4" />
-              SSH
-            </button>
-            <button
-              onClick={() => onDeleteClick(instance.name)}
-              disabled={isDeleting}
-              className="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 hover:border-red-500/50 text-red-400 hover:text-red-300 rounded-lg transition-colors text-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              title="Delete instance"
-            >
-              {isDeleting ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Deleting...
-                </>
-              ) : (
-                <>
-                  <Trash2 className="w-4 h-4" />
-                  Delete
-                </>
-              )}
-            </button>
-          </>
         )}
       </div>
     </div>
