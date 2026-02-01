@@ -51,13 +51,13 @@ export async function GET() {
               docker: inst.software?.docker ?? '',
               nodejs: inst.software?.nodejs ?? '',
               pnpm: inst.software?.pnpm ?? '',
-              openclaw: inst.software?.openclaw ?? inst.software?.clawdbot ?? '',
+              roboclaw: inst.software?.roboclaw ?? inst.software?.roboclaw ?? '',
               ttyd: inst.software?.ttyd,
             },
             configuration: {
-              openclawUser: inst.configuration?.openclaw_user ?? inst.configuration?.clawdbot_user ?? '',
-              openclawHome: inst.configuration?.openclaw_home ?? inst.configuration?.clawdbot_home ?? '',
-              openclawConfigDir: inst.configuration?.openclaw_config_dir ?? inst.configuration?.clawdbot_config_dir ?? '',
+              roboclawUser: inst.configuration?.roboclaw_user ?? inst.configuration?.roboclaw_user ?? '',
+              roboclawHome: inst.configuration?.roboclaw_home ?? inst.configuration?.roboclaw_home ?? '',
+              roboclawConfigDir: inst.configuration?.roboclaw_config_dir ?? inst.configuration?.roboclaw_config_dir ?? '',
             },
             firewall: inst.firewall ? {
               ufwEnabled: inst.firewall.ufw_enabled ?? false,

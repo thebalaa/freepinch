@@ -1,6 +1,6 @@
-# Hetzner VPS Provisioning with Clawdbot
+# Hetzner VPS Provisioning with RoboClaw
 
-One-command provisioning of VPS instances in Finland with automated Clawdbot installation.
+One-command provisioning of VPS instances in Finland with automated RoboClaw installation.
 
 ## Quick Start
 
@@ -20,9 +20,9 @@ echo 'HCLOUD_TOKEN=your-64-char-token-here' > .env
 # 5. Connect
 ssh -i hetzner_key root@$(cat finland-instance-ip.txt)
 
-# 6. Onboard Clawdbot
-sudo su - clawdbot
-clawdbot onboard --install-daemon
+# 6. Onboard RoboClaw
+sudo su - roboclaw
+openclaw onboard --install-daemon
 ```
 
 ## Commands
@@ -30,7 +30,7 @@ clawdbot onboard --install-daemon
 ### Provision New Server
 
 ```bash
-# Provision and install Clawdbot (~2-3 minutes)
+# Provision and install RoboClaw (~2-3 minutes)
 ./run-hetzner.sh
 ```
 
@@ -39,7 +39,7 @@ clawdbot onboard --install-daemon
 - Docker CE
 - Node.js 22 + pnpm
 - UFW firewall (SSH only)
-- Clawdbot latest version
+- OpenClaw latest version
 - Cost: €3.29/month
 - **Time: ~2-3 minutes**
 
@@ -53,7 +53,7 @@ clawdbot onboard --install-daemon
 Runs 17 checks including:
 - SSH connectivity
 - Software versions
-- Clawdbot installation
+- RoboClaw installation
 - Firewall configuration
 - Docker setup
 
@@ -97,7 +97,7 @@ vars:
   server_type: "cax11"                   # Instance type (see available-server-types.txt)
   location: "hel1"                       # Helsinki (hel1), Falkenstein (fsn1), Nuremberg (nbg1)
   image: "ubuntu-24.04"                  # OS image
-  clawdbot_install_mode: "release"       # or "development"
+  roboclaw_install_mode: "release"       # or "development"
 ```
 
 ### Available Instance Types
@@ -147,7 +147,7 @@ instances:
       docker: Docker version 29.2.0, build 0b9d198
       nodejs: v22.22.0
       pnpm: 10.28.2
-      clawdbot: 2026.1.24-3
+      roboclaw: 2026.1.24-3
     firewall:
       ufw_enabled: true
 ```
@@ -181,8 +181,8 @@ After provisioning, validate that everything was installed correctly:
 The validation script checks:
 - SSH connectivity
 - OS and kernel versions
-- Software versions (Docker, Node.js, pnpm, Clawdbot)
-- Clawdbot user and directory structure
+- Software versions (Docker, Node.js, pnpm, RoboClaw)
+- RoboClaw user and directory structure
 - Docker group membership and access
 - UFW firewall configuration
 - Docker daemon status
@@ -199,21 +199,21 @@ Checks Failed: 0
 
 ## Post-Installation
 
-After provisioning, connect and configure Clawdbot:
+After provisioning, connect and configure RoboClaw:
 
 ```bash
 # 1. SSH into server
 ssh -i hetzner_key root@$(cat finland-instance-ip.txt)
 
-# 2. Switch to clawdbot user
-sudo su - clawdbot
+# 2. Switch to roboclaw user
+sudo su - roboclaw
 
 # 3. Run onboarding wizard
-clawdbot onboard --install-daemon
+openclaw onboard --install-daemon
 
 # This will:
 # - Configure messaging provider (WhatsApp/Telegram/Signal)
-# - Create clawdbot.json config
+# - Create roboclaw.json config
 # - Install systemd service
 # - Start the daemon
 ```
@@ -225,7 +225,7 @@ clawdbot onboard --install-daemon
 ├── README.md                    # This file (quick start)
 ├── PROVISION.md                 # Detailed technical documentation
 ├── HETZNER_SETUP.md            # Setup guide
-├── CLAUDE.md                   # Guide for Claude Code
+├── ROBOCLAW_GUIDE.md           # RoboClaw integration guide
 ├── run-hetzner.sh              # Main script (provision/list/delete)
 ├── validate-instance.sh        # Validation script
 ├── hetzner-finland-fast.yml    # Provision playbook
@@ -236,6 +236,7 @@ clawdbot onboard --install-daemon
 ├── hetzner_key                 # SSH private key (auto-generated, gitignored)
 ├── hetzner_key.pub             # SSH public key
 ├── finland-instance-ip.txt     # Server IP address
+├── roboclaw/                   # RoboClaw source code (submodule)
 └── instances/                  # Instance artifacts (YAML)
 ```
 
@@ -251,8 +252,8 @@ clawdbot onboard --install-daemon
 2. **Configure Play**: Runs hello world, verifies connectivity
 3. **Install Play**: Installs software stack from local machine
    - Docker, Node.js, pnpm, UFW firewall
-   - Creates clawdbot user with Docker access
-   - Installs Clawdbot via pnpm
+   - Creates roboclaw user with Docker access
+   - Installs RoboClaw via pnpm
    - Saves artifact to `instances/<server-name>.yml`
 4. **Validation** (optional): Verifies installation with 17 automated checks
 
@@ -262,7 +263,7 @@ Everything runs from your local machine. No manual SSH required.
 
 - **Firewall**: UFW blocks all incoming except SSH (22)
 - **Docker Isolation**: DOCKER-USER chain prevents containers bypassing firewall
-- **Non-root**: Runs as dedicated `clawdbot` user
+- **Non-root**: Runs as dedicated `roboclaw` user
 - **SSH Key**: Auto-generated ed25519 key, gitignored
 - **API Token**: Stored in .env, gitignored
 
@@ -276,7 +277,7 @@ Everything runs from your local machine. No manual SSH required.
 # Shows exactly which checks pass/fail:
 # - SSH connectivity
 # - Software versions
-# - Clawdbot installation
+# - RoboClaw installation
 # - Firewall configuration
 # - Docker setup
 ```
@@ -395,7 +396,7 @@ vim hetzner-finland-fast.yml
 - **README.md** (this file): Quick start and common commands
 - **PROVISION.md**: Detailed technical documentation, architecture, design decisions
 - **HETZNER_SETUP.md**: Original setup guide
-- **clawdbot-ansible/**: Clawdbot installation playbook (submodule)
+- **roboclaw/**: RoboClaw source code (submodule)
 
 ## Resources
 
@@ -406,13 +407,13 @@ vim hetzner-finland-fast.yml
 
 ## License
 
-See clawdbot-ansible for Clawdbot licensing.
+See roboclaw/ for RoboClaw licensing.
 
 ## Support
 
 For issues with:
 - **Provisioning/teardown**: Check PROVISION.md
-- **Clawdbot**: See clawdbot-ansible/README.md
+- **RoboClaw**: See roboclaw/README.md
 - **Hetzner API**: Check Hetzner Cloud Console
 
 ---
@@ -423,6 +424,6 @@ echo 'HCLOUD_TOKEN=your-token' > .env
 ./run-hetzner.sh                          # Provision (~2-3 min)
 ./validate-instance.sh                     # Validate (17 checks)
 ssh -i hetzner_key root@$(cat finland-instance-ip.txt)
-sudo su - clawdbot
-clawdbot onboard --install-daemon
+sudo su - roboclaw
+openclaw onboard --install-daemon
 ```

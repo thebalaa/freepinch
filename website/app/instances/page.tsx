@@ -198,7 +198,7 @@ export default function InstancesPage() {
             <div className="mb-8">
               <h1 className="text-4xl font-bold mb-2">Instances</h1>
               <p className="text-gray-400">
-                Manage your OpenClaw VPS instances
+                Manage your RoboClaw VPS instances
               </p>
             </div>
 
@@ -215,7 +215,7 @@ export default function InstancesPage() {
                 <Server className="w-16 h-16 text-gray-600 mx-auto mb-4" />
                 <h2 className="text-2xl font-bold mb-2">No instances yet</h2>
                 <p className="text-gray-400 mb-6">
-                  Deploy your first OpenClaw instance to get started
+                  Deploy your first RoboClaw instance to get started
                 </p>
                 <a
                   href="/deploy"

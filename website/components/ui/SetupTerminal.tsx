@@ -16,7 +16,7 @@ export default function SetupTerminal({ url, onComplete }: SetupTerminalProps) {
   return (
     <div className="max-w-6xl mx-auto">
       <div className="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-6">
-        <h2 className="text-2xl font-bold mb-4">OpenClaw Onboarding</h2>
+        <h2 className="text-2xl font-bold mb-4">RoboClaw Onboarding</h2>
         <p className="text-gray-400 mb-6">
           Complete the onboarding wizard in the terminal below. When you're done, click the "I'm Done" button.
         </p>
@@ -60,7 +60,7 @@ export default function SetupTerminal({ url, onComplete }: SetupTerminalProps) {
           <iframe
             src={url}
             className="w-full h-full"
-            title="OpenClaw Onboarding Terminal"
+            title="RoboClaw Onboarding Terminal"
             onLoad={() => {
               setIsLoading(false)
               // Check if iframe loaded an error page

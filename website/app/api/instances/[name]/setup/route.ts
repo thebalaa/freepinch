@@ -174,13 +174,13 @@ function startTtydOnRemote(
       clearTimeout(timeout)
 
       try {
-        const scriptPath = `/usr/local/bin/openclaw-onboard-${instanceName}.sh`
+        const scriptPath = `/usr/local/bin/roboclaw-onboard-${instanceName}.sh`
         const logPath = `/tmp/ttyd-${instanceName}.log`
 
         // Step 1: Create wrapper script
         console.log(`[Setup] Creating wrapper script`)
         await execSSHCommand(conn, `echo '#!/bin/bash' > ${scriptPath}`)
-        await execSSHCommand(conn, `echo 'su -l openclaw -c "openclaw onboard"' >> ${scriptPath}`)
+        await execSSHCommand(conn, `echo 'su -l roboclaw -c "openclaw onboard"' >> ${scriptPath}`)
         await execSSHCommand(conn, `chmod +x ${scriptPath}`)
 
         // Step 2: Kill existing ttyd

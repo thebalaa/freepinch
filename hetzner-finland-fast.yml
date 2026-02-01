@@ -5,12 +5,13 @@
 
   vars:
     hcloud_token: "{{ lookup('env', 'HCLOUD_TOKEN') }}"
-    server_name: "finland-instance"
-    server_type: "cax11"  # 2 vCPU, 4GB RAM, 40GB disk (~€3.29/month, ARM)
-    location: "hel1"     # Helsinki, Finland
-    image: "ubuntu-24.04"
-    ssh_key_name: "my-ssh-key"
+    server_name: "{{ lookup('env', 'SERVER_NAME') | default('finland-instance', true) }}"
+    server_type: "{{ lookup('env', 'SERVER_TYPE') | default('cax11', true) }}"  # 2 vCPU, 4GB RAM, 40GB disk (~€3.29/month, ARM)
+    location: "{{ lookup('env', 'LOCATION') | default('hel1', true) }}"     # Helsinki, Finland
+    image: "{{ lookup('env', 'IMAGE') | default('ubuntu-24.04', true) }}"
+    ssh_key_name: "{{ server_name }}-key"
     ssh_public_key: "{{ lookup('env', 'SSH_PUBLIC_KEY') | default('', true) }}"
+    ssh_private_key_path: "{{ lookup('env', 'SSH_PRIVATE_KEY_PATH') | default('./hetzner_key', true) }}"
 
   tasks:
     - name: Fail if HCLOUD_TOKEN is not set
@@ -29,7 +30,15 @@
         name: "{{ ssh_key_name }}"
         public_key: "{{ ssh_public_key }}"
         state: present
+        force: true  # Force update if key with same name exists but different public key
       register: ssh_key
+
+    - name: Delete existing server if it exists (to force fresh deployment with new SSH key)
+      hetzner.hcloud.server:
+        api_token: "{{ hcloud_token }}"
+        name: "{{ server_name }}"
+        state: absent
+      ignore_errors: true
 
     - name: Create Hetzner Cloud server in Helsinki
       hetzner.hcloud.server:
@@ -64,8 +73,14 @@
         name: "{{ server.hcloud_server.ipv4_address }}"
         groups: finland_vps
         ansible_user: root
-        ansible_ssh_private_key_file: "./hetzner_key"
+        ansible_ssh_private_key_file: "{{ ssh_private_key_path }}"
         ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
+        # Store variables for later use in second play
+        deployment_ssh_key_path: "{{ ssh_private_key_path }}"
+        deployment_server_name: "{{ server.hcloud_server.name }}"
+        deployment_server_type: "{{ server.hcloud_server.server_type }}"
+        deployment_server_location: "{{ server.hcloud_server.location }}"
+        deployment_server_image: "{{ server.hcloud_server.image }}"
 
     - name: Wait for SSH to become available
       ansible.builtin.wait_for:
@@ -75,16 +90,16 @@
         timeout: 300
         state: started
 
-- name: Fast Install Clawdbot (Essentials Only)
+- name: Fast Install RoboClaw (Essentials Only)
   hosts: finland_vps
   gather_facts: true
   become: true
 
   vars:
     ansible_python_interpreter: /usr/bin/python3
-    clawdbot_user: clawdbot
-    clawdbot_home: "/home/{{ clawdbot_user }}"
-    clawdbot_config_dir: "{{ clawdbot_home }}/.clawdbot"
+    roboclaw_user: roboclaw
+    roboclaw_home: "/home/{{ roboclaw_user }}"
+    roboclaw_config_dir: "{{ roboclaw_home }}/.roboclaw"
     nodejs_version: "22.x"
 
   tasks:
@@ -97,7 +112,8 @@
           ✅ Docker CE
           ✅ Node.js 22 + pnpm
           ✅ UFW Firewall
-          ✅ Clawdbot
+          ✅ RoboClaw
+          ✅ ttyd (browser terminal)
 
           Skipping (for speed):
           ⏭️  Homebrew
@@ -124,24 +140,24 @@
           - lsb-release
         state: present
 
-    # Create clawdbot user
-    - name: Create clawdbot system user
+    # Create roboclaw user
+    - name: Create roboclaw system user
       ansible.builtin.user:
-        name: "{{ clawdbot_user }}"
-        comment: "Clawdbot system user"
+        name: "{{ roboclaw_user }}"
+        comment: "RoboClaw system user"
         shell: /bin/bash
         create_home: true
-        home: "{{ clawdbot_home }}"
+        home: "{{ roboclaw_home }}"
 
-    - name: Add clawdbot user to sudoers with NOPASSWD
+    - name: Add roboclaw user to sudoers with NOPASSWD
       ansible.builtin.copy:
-        content: "{{ clawdbot_user }} ALL=(ALL) NOPASSWD:ALL\n"
-        dest: "/etc/sudoers.d/{{ clawdbot_user }}"
+        content: "{{ roboclaw_user }} ALL=(ALL) NOPASSWD:ALL\n"
+        dest: "/etc/sudoers.d/{{ roboclaw_user }}"
         mode: '0440'
         validate: 'visudo -cf %s'
 
-    - name: Enable lingering for clawdbot user
-      ansible.builtin.command: loginctl enable-linger {{ clawdbot_user }}
+    - name: Enable lingering for roboclaw user
+      ansible.builtin.command: loginctl enable-linger {{ roboclaw_user }}
       changed_when: false
 
     # Install Docker CE (fast - no extra config)
@@ -168,9 +184,9 @@
         state: present
         update_cache: true
 
-    - name: Add clawdbot user to docker group
+    - name: Add roboclaw user to docker group
       ansible.builtin.user:
-        name: "{{ clawdbot_user }}"
+        name: "{{ roboclaw_user }}"
         groups: docker
         append: true
 
@@ -228,61 +244,70 @@
         cmd: npm install -g pnpm
         creates: /usr/bin/pnpm
 
-    # Install Clawdbot (fast - from npm, minimal config)
-    - name: Create Clawdbot directories
+    - name: Install ttyd for browser-based terminal
+      ansible.builtin.apt:
+        name: ttyd
+        state: present
+
+    # Install RoboClaw (fast - from npm, minimal config)
+    - name: Create RoboClaw directories
       ansible.builtin.file:
         path: "{{ item.path }}"
         state: directory
-        owner: "{{ clawdbot_user }}"
-        group: "{{ clawdbot_user }}"
+        owner: "{{ roboclaw_user }}"
+        group: "{{ roboclaw_user }}"
         mode: "{{ item.mode }}"
       loop:
-        - { path: "{{ clawdbot_config_dir }}", mode: '0755' }
-        - { path: "{{ clawdbot_config_dir }}/sessions", mode: '0755' }
-        - { path: "{{ clawdbot_config_dir }}/credentials", mode: '0700' }
-        - { path: "{{ clawdbot_config_dir }}/data", mode: '0755' }
-        - { path: "{{ clawdbot_config_dir }}/logs", mode: '0755' }
-        - { path: "{{ clawdbot_home }}/.local/share/pnpm", mode: '0755' }
-        - { path: "{{ clawdbot_home }}/.local/bin", mode: '0755' }
+        - { path: "{{ roboclaw_config_dir }}", mode: '0755' }
+        - { path: "{{ roboclaw_config_dir }}/sessions", mode: '0755' }
+        - { path: "{{ roboclaw_config_dir }}/credentials", mode: '0700' }
+        - { path: "{{ roboclaw_config_dir }}/data", mode: '0755' }
+        - { path: "{{ roboclaw_config_dir }}/logs", mode: '0755' }
+        - { path: "{{ roboclaw_home }}/.local/share/pnpm", mode: '0755' }
+        - { path: "{{ roboclaw_home }}/.local/bin", mode: '0755' }
 
-    - name: Configure pnpm for clawdbot user
+    - name: Configure pnpm for roboclaw user
       ansible.builtin.shell:
         cmd: |
-          pnpm config set global-dir {{ clawdbot_home }}/.local/share/pnpm
-          pnpm config set global-bin-dir {{ clawdbot_home }}/.local/bin
+          pnpm config set global-dir {{ roboclaw_home }}/.local/share/pnpm
+          pnpm config set global-bin-dir {{ roboclaw_home }}/.local/bin
         executable: /bin/bash
       become: true
-      become_user: "{{ clawdbot_user }}"
+      become_user: "{{ roboclaw_user }}"
       changed_when: true
 
-    - name: Install Clawdbot globally from npm
+    - name: Install OpenClaw globally from npm
       ansible.builtin.shell:
-        cmd: pnpm install -g clawdbot@latest
+        cmd: pnpm install -g openclaw@latest
         executable: /bin/bash
       become: true
-      become_user: "{{ clawdbot_user }}"
+      become_user: "{{ roboclaw_user }}"
       environment:
-        HOME: "{{ clawdbot_home }}"
-        PNPM_HOME: "{{ clawdbot_home }}/.local/share/pnpm"
-        PATH: "{{ clawdbot_home }}/.local/bin:{{ ansible_env.PATH }}"
-      register: clawdbot_install
+        HOME: "{{ roboclaw_home }}"
+        PNPM_HOME: "{{ roboclaw_home }}/.local/share/pnpm"
+        PATH: "{{ roboclaw_home }}/.local/bin:{{ ansible_env.PATH }}"
+      register: roboclaw_install
 
-    - name: Configure minimal .bashrc for clawdbot user
+    - name: Configure minimal .bashrc for roboclaw user
       ansible.builtin.blockinfile:
-        path: "{{ clawdbot_home }}/.bashrc"
-        marker: "# {mark} ANSIBLE MANAGED BLOCK - Clawdbot"
+        path: "{{ roboclaw_home }}/.bashrc"
+        marker: "# {mark} ANSIBLE MANAGED BLOCK - RoboClaw"
         block: |
           # pnpm configuration
-          export PNPM_HOME="{{ clawdbot_home }}/.local/share/pnpm"
-          export PATH="{{ clawdbot_home }}/.local/bin:$PNPM_HOME:$PATH"
+          export PNPM_HOME="{{ roboclaw_home }}/.local/share/pnpm"
+          export PATH="{{ roboclaw_home }}/.local/bin:$PNPM_HOME:$PATH"
         create: true
-        owner: "{{ clawdbot_user }}"
-        group: "{{ clawdbot_user }}"
+        owner: "{{ roboclaw_user }}"
+        group: "{{ roboclaw_user }}"
         mode: '0644'
 
-    - name: Verify clawdbot installation
-      ansible.builtin.command: su - clawdbot -c "clawdbot --version"
-      register: clawdbot_version
+    - name: Verify roboclaw installation
+      ansible.builtin.shell: |
+        export PATH="{{ roboclaw_home }}/.local/bin:$PATH"
+        openclaw --version
+      become: true
+      become_user: "{{ roboclaw_user }}"
+      register: roboclaw_version
       changed_when: false
 
     - name: Display installation complete
@@ -290,7 +315,7 @@
         msg: |
           ⚡ FAST INSTALL COMPLETE! ⚡
 
-          Version: {{ clawdbot_version.stdout }}
+          Version: {{ roboclaw_version.stdout }}
           Server: {{ ansible_default_ipv4.address }}
           Install time: ~2-3 minutes (vs ~10-15 with full install)
 
@@ -299,7 +324,8 @@
           • Node.js {{ nodejs_version }}
           • pnpm (latest)
           • UFW Firewall
-          • Clawdbot {{ clawdbot_version.stdout }}
+          • RoboClaw {{ roboclaw_version.stdout }}
+          • ttyd (browser terminal)
 
           ⏭️  Skipped for speed:
           • Homebrew (not needed on Linux)
@@ -309,9 +335,7 @@
           • System dist-upgrade
 
           Next steps:
-          1. SSH: ssh -i hetzner_key root@{{ ansible_default_ipv4.address }}
-          2. Switch user: sudo su - clawdbot
-          3. Onboard: clawdbot onboard --install-daemon
+          Complete onboarding from the dashboard at http://localhost:3000/instances
 
           To install extras later:
           apt install zsh tmux htop vim jq
@@ -344,24 +368,26 @@
         content: |
           # Instance provisioned on {{ ansible_date_time.iso8601 }}
           instances:
-            - name: {{ hostvars['localhost']['server'].hcloud_server.name }}
+            - name: {{ deployment_server_name }}
               ip: {{ ansible_default_ipv4.address }}
-              server_type: {{ hostvars['localhost']['server'].hcloud_server.server_type }}
-              location: {{ hostvars['localhost']['server'].hcloud_server.location }}
-              image: {{ hostvars['localhost']['server'].hcloud_server.image }}
+              server_type: {{ deployment_server_type }}
+              location: {{ deployment_server_location }}
+              image: {{ deployment_server_image }}
               provisioned_at: {{ ansible_date_time.iso8601 }}
               install_mode: fast
+              onboarding_completed: false
               software:
                 os: {{ ansible_distribution }} {{ ansible_distribution_version }}
                 kernel: {{ ansible_kernel }}
                 docker: {{ docker_version_output.stdout }}
                 nodejs: {{ nodejs_version_output.stdout }}
                 pnpm: {{ pnpm_version_output.stdout }}
-                clawdbot: {{ clawdbot_version.stdout }}
+                roboclaw: {{ roboclaw_version.stdout }}
+                ttyd: installed
               configuration:
-                clawdbot_user: {{ clawdbot_user }}
-                clawdbot_home: {{ clawdbot_home }}
-                clawdbot_config_dir: {{ clawdbot_config_dir }}
+                roboclaw_user: {{ roboclaw_user }}
+                roboclaw_home: {{ roboclaw_home }}
+                roboclaw_config_dir: {{ roboclaw_config_dir }}
               firewall:
                 ufw_enabled: true
                 allowed_ports:
@@ -369,9 +395,9 @@
                     proto: tcp
                     description: SSH
               ssh:
-                key_file: ./hetzner_key
-                public_key_file: ./hetzner_key.pub
-        dest: "./instances/{{ hostvars['localhost']['server'].hcloud_server.name }}.yml"
+                key_file: "{{ deployment_ssh_key_path }}"
+                public_key_file: "{{ deployment_ssh_key_path }}.pub"
+        dest: "./instances/{{ deployment_server_name }}.yml"
         mode: '0644'
       delegate_to: localhost
       become: false
@@ -379,4 +405,4 @@
     - name: Display artifact saved message
       ansible.builtin.debug:
         msg: |
-          📝 Instance artifact saved to: instances/{{ hostvars['localhost']['server'].hcloud_server.name }}.yml
+          📝 Instance artifact saved to: instances/{{ deployment_server_name }}.yml

@@ -3,12 +3,12 @@ const { readFileSync } = require('fs');
 
 const conn = new Client();
 const remotePort = 7735;
-const instanceName = 'OpenClaw01';
+const instanceName = 'RoboClaw01';
 
 conn.on('ready', () => {
   console.log('SSH connection ready');
   
-  const scriptPath = `/usr/local/bin/openclaw-onboard-${instanceName}.sh`;
+  const scriptPath = `/usr/local/bin/roboclaw-onboard-${instanceName}.sh`;
   const logPath = `/tmp/ttyd-${instanceName}.log`;
   
   // Test the actual ttyd command step by step
@@ -16,7 +16,7 @@ conn.on('ready', () => {
 echo "Step 1: Creating wrapper script..."
 cat > ${scriptPath} << "SCRIPT_END"
 #!/bin/bash
-su -l openclaw -c "openclaw onboard"
+su -l roboclaw -c "openclaw onboard"
 SCRIPT_END
 echo "Step 1: Done"
 
@@ -91,7 +91,7 @@ conn.on('error', (err) => {
   console.error('Connection error:', err);
 });
 
-const privateKey = readFileSync('/Users/balaa/freepinch/ssh-keys/OpenClaw01_key', 'utf-8');
+const privateKey = readFileSync('/Users/balaa/freepinch/ssh-keys/RoboClaw01_key', 'utf-8');
 
 conn.connect({
   host: '65.21.149.78',

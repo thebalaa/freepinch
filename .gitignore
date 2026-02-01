@@ -4,6 +4,7 @@
 # SSH keys (auto-generated, should not be committed)
 hetzner_key
 hetzner_key.pub
+ssh-keys/
 
 # Generated files
 finland-instance-ip.txt
@@ -46,3 +47,4 @@ wheels/
 
 # Logs
 *.log
+deployment-logs/

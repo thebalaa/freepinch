@@ -8,6 +8,7 @@
     target_server_name: "{{ server_name | default('finland-instance') }}"
     remove_ssh_key: "{{ delete_ssh_key | default(false) }}"
     ssh_key_name: "my-ssh-key"
+    auto_confirm: "{{ confirm_delete | default('no') }}"
 
   tasks:
     - name: Fail if HCLOUD_TOKEN is not set
@@ -66,12 +67,13 @@
       ansible.builtin.pause:
         prompt: "Type 'yes' to confirm deletion of {{ target_server_name }}"
       register: confirm
+      when: auto_confirm != "yes"
       tags: [delete]
 
     - name: Abort if not confirmed
       ansible.builtin.fail:
         msg: "Deletion cancelled by user"
-      when: confirm.user_input != "yes"
+      when: auto_confirm != "yes" and confirm.user_input != "yes"
       tags: [delete]
 
     - name: Delete Hetzner Cloud server

@@ -77,7 +77,7 @@ export async function POST(request: Request, context: RouteContext) {
 }
 
 /**
- * Checks if the openclaw.json config file exists on the remote server.
+ * Checks if the roboclaw.json config file exists on the remote server.
  * This indicates that onboarding was completed.
  */
 function checkOnboardingComplete(ip: string, privateKey: string): Promise<boolean> {
@@ -85,8 +85,8 @@ function checkOnboardingComplete(ip: string, privateKey: string): Promise<boolea
     const conn = new Client()
 
     conn.on('ready', () => {
-      // Check if ~/.openclaw/openclaw.json exists
-      const command = 'test -f /home/openclaw/.openclaw/openclaw.json && echo "exists" || echo "missing"'
+      // Check if ~/.roboclaw/roboclaw.json exists
+      const command = 'test -f /home/roboclaw/.roboclaw/roboclaw.json && echo "exists" || echo "missing"'
 
       conn.exec(command, (err, stream) => {
         if (err) {

@@ -1,12 +1,12 @@
-# Open Claw Deploy - Web Application
+# RoboClaw Deploy - Web Application
 
-A sleek, modern web application for deploying Clawdbot on Hetzner Cloud VPS instances with real-time deployment logs.
+A sleek, modern web application for deploying RoboClaw on Hetzner Cloud VPS instances with real-time deployment logs.
 
 ## Features
 
 - **1-Click Deployment**: Paste your Hetzner API token and launch
 - **Real-Time Logs**: Watch the deployment progress with streaming terminal output
-- **Automated Provisioning**: Installs Docker, Node.js, UFW firewall, and Clawdbot
+- **Automated Provisioning**: Installs Docker, Node.js, UFW firewall, and RoboClaw
 - **Secure**: Token used transiently, SSH keys generated per deployment
 - **Beautiful UI**: Dark-themed landing page with animated terminal mockup
 
@@ -98,7 +98,7 @@ Architecture benefits:
 4. API route executes `../run-hetzner.sh` with token as environment variable
 5. User watches real-time Ansible output streaming in browser (via SSE)
 6. On completion, downloads SSH private key from `../hetzner_key`
-7. SSHs into the VPS and onboards Clawdbot (`clawdbot onboard --install-daemon`)
+7. SSHs into the VPS and onboards OpenClaw (`openclaw onboard --install-daemon`)
 
 ### 2. Deployment Flow
 
@@ -123,13 +123,13 @@ Tasks run on the Next.js server machine:
 6. **Add to Inventory** - Register server for next play (hetzner-finland-fast.yml:62-68)
 7. **Wait for SSH** - Poll port 22, max 5min (hetzner-finland-fast.yml:70-76)
 
-#### Play 2: Fast Install Clawdbot (remote VPS)
+#### Play 2: Fast Install RoboClaw (remote VPS)
 Tasks run on the provisioned VPS via SSH:
 
 8. **Update APT Cache** - No dist-upgrade for speed (hetzner-finland-fast.yml:111-114)
 9. **Install Base Packages** - curl, wget, git, ca-certificates, gnupg, lsb-release (hetzner-finland-fast.yml:116-125)
-10. **Create clawdbot User** - With home directory (hetzner-finland-fast.yml:128-135)
-11. **Configure Sudo** - NOPASSWD for clawdbot (hetzner-finland-fast.yml:136-141)
+10. **Create roboclaw User** - With home directory (hetzner-finland-fast.yml:128-135)
+11. **Configure Sudo** - NOPASSWD for roboclaw (hetzner-finland-fast.yml:136-141)
 12. **Enable Lingering** - User services without login (hetzner-finland-fast.yml:143-145)
 13. **Install Docker CE** - Add repo + install packages (hetzner-finland-fast.yml:148-169)
 14. **Add User to docker Group** - Non-root Docker access (hetzner-finland-fast.yml:171-175)
@@ -140,11 +140,11 @@ Tasks run on the provisioned VPS via SSH:
 19. **Enable UFW** - Activate firewall (hetzner-finland-fast.yml:203-205)
 20. **Install Node.js 22** - From NodeSource repo (hetzner-finland-fast.yml:208-224)
 21. **Install pnpm** - Global via npm (hetzner-finland-fast.yml:226-229)
-22. **Create Clawdbot Directories** - ~/.clawdbot/{sessions,credentials,data,logs} (hetzner-finland-fast.yml:232-246)
+22. **Create RoboClaw Directories** - ~/.roboclaw/{sessions,credentials,data,logs} (hetzner-finland-fast.yml:232-246)
 23. **Configure pnpm** - Set global-dir and bin paths (hetzner-finland-fast.yml:248-256)
-24. **Install Clawdbot** - Global pnpm install (hetzner-finland-fast.yml:258-268)
+24. **Install RoboClaw** - Global pnpm install (hetzner-finland-fast.yml:258-268)
 25. **Configure .bashrc** - Add PNPM_HOME and PATH (hetzner-finland-fast.yml:270-281)
-26. **Verify Installation** - Check clawdbot version (hetzner-finland-fast.yml:283-286)
+26. **Verify Installation** - Check roboclaw version (hetzner-finland-fast.yml:283-286)
 27. **Save Instance Artifact** - Create YAML record in instances/ (hetzner-finland-fast.yml:319-377)
 28. **Display Completion** - Show SSH instructions (hetzner-finland-fast.yml:288-315)
 
@@ -190,10 +190,10 @@ The web app is a **thin UI wrapper** around the existing Ansible automation:
 │   - Create SSH key in Hetzner                              │
 │   - Create server instance                                 │
 │   - Wait for SSH                                           │
-│  Play 2: Install Clawdbot (remote VPS)                     │
+│  Play 2: Install RoboClaw (remote VPS)                     │
 │   - Install Docker, Node.js, UFW, pnpm                     │
-│   - Create clawdbot user                                   │
-│   - Install Clawdbot globally                              │
+│   - Create roboclaw user                                   │
+│   - Install RoboClaw globally                              │
 │   - Save instance artifact                                 │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -304,7 +304,7 @@ data:     "msg": "✅ Server created successfully!\n\n          Name: finland-in
 data: }
 
 event: success
-data: {"ip":"65.21.149.78","serverName":"finland-instance","sshPrivateKey":"-----BEGIN OPENSSH PRIVATE KEY-----\n...","sshUser":"root","nextSteps":["ssh -i hetzner_key root@65.21.149.78","sudo su - clawdbot","clawdbot onboard --install-daemon"]}
+data: {"ip":"65.21.149.78","serverName":"finland-instance","sshPrivateKey":"-----BEGIN OPENSSH PRIVATE KEY-----\n...","sshUser":"root","nextSteps":["ssh -i hetzner_key root@65.21.149.78","sudo su - roboclaw","openclaw onboard --install-daemon"]}
 
 event: error
 data: {"message":"Ansible playbook failed with exit code 2","stderr":"ERROR! HCLOUD_TOKEN not set"}
@@ -333,8 +333,8 @@ vars:
   server_type: "cax11"                   # ARM64, 2 vCPU, 4GB RAM, €3.29/mo
   location: "hel1"                       # Helsinki, Finland
   image: "ubuntu-24.04"                  # Ubuntu 24.04 LTS
-  nodejs_version: "22.x"                 # Node.js version for Clawdbot
-  clawdbot_user: "clawdbot"              # System user for Clawdbot
+  nodejs_version: "22.x"                 # Node.js version for RoboClaw
+  roboclaw_user: "roboclaw"              # System user for RoboClaw
 ```
 
 **To customize server type/location:**
@@ -412,7 +412,7 @@ Use PM2 for production:
 
 ```bash
 npm install -g pm2
-pm2 start npm --name "openclaw-deploy" -- start
+pm2 start npm --name "roboclaw-deploy" -- start
 pm2 save
 pm2 startup
 ```
@@ -453,8 +453,8 @@ CMD ["npm", "start"]
 ```
 
 ```bash
-docker build -t openclaw-deploy .
-docker run -p 3000:3000 openclaw-deploy
+docker build -t roboclaw-deploy .
+docker run -p 3000:3000 roboclaw-deploy
 ```
 
 ## Security Considerations
@@ -602,5 +602,5 @@ Pull requests welcome! Please ensure:
 ## Related
 
 - [Hetzner Cloud API Docs](https://docs.hetzner.cloud/)
-- [Clawdbot Repository](https://github.com/openclaw/clawdbot)
+- [RoboClaw Repository](https://github.com/roboclaw/roboclaw)
 - [ssh2 Documentation](https://github.com/mscdex/ssh2)

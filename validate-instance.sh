@@ -118,7 +118,7 @@ EXPECTED_KERNEL=$(grep "^      kernel:" "$ARTIFACT_FILE" | sed 's/.*kernel: //' 
 EXPECTED_DOCKER=$(grep "^      docker:" "$ARTIFACT_FILE" | sed 's/.*docker: //' | sed 's/^ *//')
 EXPECTED_NODEJS=$(grep "^      nodejs:" "$ARTIFACT_FILE" | sed 's/.*nodejs: //' | tr -d ' ')
 EXPECTED_PNPM=$(grep "^      pnpm:" "$ARTIFACT_FILE" | sed 's/.*pnpm: //' | tr -d ' ')
-EXPECTED_CLAWDBOT=$(grep "^      clawdbot:" "$ARTIFACT_FILE" | sed 's/.*clawdbot: //' | tr -d ' ')
+EXPECTED_ROBOCLAW=$(grep "^      roboclaw:" "$ARTIFACT_FILE" | sed 's/.*roboclaw: //' | tr -d ' ')
 
 print_info "Instance IP: $IP_ADDRESS"
 print_info "Server Type: $SERVER_TYPE"
@@ -194,65 +194,65 @@ else
     print_fail "pnpm mismatch. Expected: $EXPECTED_PNPM, Got: $ACTUAL_PNPM"
 fi
 
-# Test 4: Clawdbot User & Installation
-print_header "4. CLAWDBOT USER & INSTALLATION"
+# Test 4: OpenClaw User & Installation
+print_header "4. ROBOCLAW USER & INSTALLATION"
 
-print_check "Verifying clawdbot user exists"
-if ssh_exec "id clawdbot" &>/dev/null; then
-    USER_INFO=$(ssh_exec "id clawdbot")
-    print_success "clawdbot user exists: $USER_INFO"
+print_check "Verifying roboclaw user exists"
+if ssh_exec "id roboclaw" &>/dev/null; then
+    USER_INFO=$(ssh_exec "id roboclaw")
+    print_success "roboclaw user exists: $USER_INFO"
 else
-    print_fail "clawdbot user not found"
+    print_fail "roboclaw user not found"
 fi
 
-print_check "Verifying clawdbot is in docker group"
-if ssh_exec "groups clawdbot | grep -q docker"; then
-    print_success "clawdbot user is in docker group"
+print_check "Verifying roboclaw is in docker group"
+if ssh_exec "groups roboclaw | grep -q docker"; then
+    print_success "roboclaw user is in docker group"
 else
-    print_fail "clawdbot user is NOT in docker group"
+    print_fail "roboclaw user is NOT in docker group"
 fi
 
-print_check "Verifying clawdbot home directory"
-if ssh_exec "test -d /home/clawdbot"; then
-    print_success "/home/clawdbot directory exists"
+print_check "Verifying roboclaw home directory"
+if ssh_exec "test -d /home/roboclaw"; then
+    print_success "/home/roboclaw directory exists"
 else
-    print_fail "/home/clawdbot directory not found"
+    print_fail "/home/roboclaw directory not found"
 fi
 
-print_check "Verifying clawdbot config directory structure"
+print_check "Verifying roboclaw config directory structure"
 MISSING_DIRS=()
-for dir in .clawdbot .clawdbot/credentials .clawdbot/data .clawdbot/logs .clawdbot/sessions; do
-    if ! ssh_exec "test -d /home/clawdbot/$dir" &>/dev/null; then
+for dir in .roboclaw .roboclaw/credentials .roboclaw/data .roboclaw/logs .roboclaw/sessions; do
+    if ! ssh_exec "test -d /home/roboclaw/$dir" &>/dev/null; then
         MISSING_DIRS+=("$dir")
     fi
 done
 
 if [[ ${#MISSING_DIRS[@]} -eq 0 ]]; then
-    print_success "All clawdbot config directories exist"
+    print_success "All roboclaw config directories exist"
 else
     print_fail "Missing directories: ${MISSING_DIRS[*]}"
 fi
 
-print_check "Verifying clawdbot installation"
-if ssh_exec "su - clawdbot -c 'which clawdbot'" &>/dev/null; then
-    CLAWDBOT_PATH=$(ssh_exec "su - clawdbot -c 'which clawdbot'")
-    ACTUAL_CLAWDBOT=$(ssh_exec "su - clawdbot -c 'clawdbot --version'")
+print_check "Verifying roboclaw installation"
+if ssh_exec "su - roboclaw -c 'which openclaw'" &>/dev/null; then
+    ROBOCLAW_PATH=$(ssh_exec "su - roboclaw -c 'which openclaw'")
+    ACTUAL_ROBOCLAW=$(ssh_exec "su - roboclaw -c 'openclaw --version'")
 
-    if [[ "$ACTUAL_CLAWDBOT" == "$EXPECTED_CLAWDBOT" ]]; then
-        print_success "clawdbot version matches: $ACTUAL_CLAWDBOT"
-        print_info "Installed at: $CLAWDBOT_PATH"
+    if [[ "$ACTUAL_ROBOCLAW" == "$EXPECTED_ROBOCLAW" ]]; then
+        print_success "roboclaw version matches: $ACTUAL_ROBOCLAW"
+        print_info "Installed at: $ROBOCLAW_PATH"
     else
-        print_fail "clawdbot version mismatch. Expected: $EXPECTED_CLAWDBOT, Got: $ACTUAL_CLAWDBOT"
+        print_fail "roboclaw version mismatch. Expected: $EXPECTED_ROBOCLAW, Got: $ACTUAL_ROBOCLAW"
     fi
 else
-    print_fail "clawdbot command not found for clawdbot user"
+    print_fail "roboclaw command not found for roboclaw user"
 fi
 
-print_check "Verifying clawdbot can access Docker"
-if ssh_exec "su - clawdbot -c 'docker ps'" &>/dev/null; then
-    print_success "clawdbot user can access Docker"
+print_check "Verifying roboclaw can access Docker"
+if ssh_exec "su - roboclaw -c 'docker ps'" &>/dev/null; then
+    print_success "roboclaw user can access Docker"
 else
-    print_fail "clawdbot user cannot access Docker"
+    print_fail "roboclaw user cannot access Docker"
 fi
 
 # Test 5: Firewall Configuration
@@ -314,12 +314,13 @@ if [[ $CHECKS_FAILED -eq 0 ]]; then
     echo -e "${GREEN}✓ All validation checks passed!${NC}"
     echo ""
     echo -e "${BLUE}Next steps:${NC}"
-    echo "  1. SSH into the server:"
-    echo "     ssh -i $SSH_KEY root@$IP_ADDRESS"
+    echo "  1. Complete onboarding from the dashboard:"
+    echo "     http://localhost:3000/instances"
     echo ""
-    echo "  2. Switch to clawdbot user and onboard:"
-    echo "     sudo su - clawdbot"
-    echo "     clawdbot onboard --install-daemon"
+    echo "  2. Or manually via SSH:"
+    echo "     ssh -i $SSH_KEY root@$IP_ADDRESS"
+    echo "     sudo su - roboclaw"
+    echo "     openclaw onboard"
     echo ""
     exit 0
 else

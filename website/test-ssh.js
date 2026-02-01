@@ -36,7 +36,7 @@ conn.on('error', (err) => {
   console.error('Connection error:', err);
 });
 
-const privateKey = readFileSync('/Users/balaa/freepinch/ssh-keys/OpenClaw01_key', 'utf-8');
+const privateKey = readFileSync('/Users/balaa/freepinch/ssh-keys/RoboClaw01_key', 'utf-8');
 
 conn.connect({
   host: '65.21.149.78',

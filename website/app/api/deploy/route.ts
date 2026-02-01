@@ -109,7 +109,7 @@ async function executeAnsibleDeployment(
   emit: EventEmitter
 ): Promise<void> {
   const startTime = Date.now()
-  const serverName = config.serverName || `openclaw-${Date.now().toString(36)}`
+  const serverName = config.serverName || `roboclaw-${Date.now().toString(36)}`
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
   const logFileName = `${timestamp}_${serverName}.log`
   const logFilePath = join(LOGS_DIR, logFileName)
@@ -188,8 +188,8 @@ async function executeAnsibleDeployment(
       if (line.includes('Update apt cache') || line.includes('Install minimal essential packages')) {
         return { phase: 'install_packages', step: 5, label: 'Install base packages' }
       }
-      if (line.includes('Create openclaw user')) {
-        return { phase: 'create_user', step: 6, label: 'Create openclaw user' }
+      if (line.includes('Create roboclaw user')) {
+        return { phase: 'create_user', step: 6, label: 'Create roboclaw user' }
       }
       if (line.includes('Install Docker')) {
         return { phase: 'install_docker', step: 7, label: 'Install Docker' }
@@ -200,10 +200,10 @@ async function executeAnsibleDeployment(
       if (line.includes('Install Node.js') || line.includes('Add NodeSource')) {
         return { phase: 'install_nodejs', step: 9, label: 'Install Node.js' }
       }
-      if (line.includes('Install OpenClaw') || line.includes('Install pnpm')) {
-        return { phase: 'install_openclaw', step: 10, label: 'Install OpenClaw' }
+      if (line.includes('Install RoboClaw') || line.includes('Install pnpm')) {
+        return { phase: 'install_roboclaw', step: 10, label: 'Install RoboClaw' }
       }
-      if (line.includes('Verify openclaw installation')) {
+      if (line.includes('Verify roboclaw installation')) {
         return { phase: 'verify', step: 11, label: 'Verify installation' }
       }
       if (line.includes('FAST INSTALL COMPLETE')) {
@@ -342,8 +342,8 @@ async function executeAnsibleDeployment(
             sshUser: 'root',
             nextSteps: [
               'Complete setup from the dashboard at /instances',
-              `Or manually: ssh -i openclaw_key root@${ip}`,
-              'sudo su - openclaw',
+              `Or manually: ssh -i roboclaw_key root@${ip}`,
+              'sudo su - roboclaw',
               'openclaw onboard',
             ],
           })

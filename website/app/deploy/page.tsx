@@ -43,7 +43,7 @@ export default function DeployPage() {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = 'openclaw_key'
+    a.download = 'roboclaw_key'
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
@@ -237,11 +237,11 @@ const DEPLOYMENT_PHASES = [
   { phase: 'provisioning', label: 'Create VPS instance' },
   { phase: 'ssh_wait', label: 'Wait for SSH' },
   { phase: 'install_packages', label: 'Install base packages' },
-  { phase: 'create_user', label: 'Create openclaw user' },
+  { phase: 'create_user', label: 'Create roboclaw user' },
   { phase: 'install_docker', label: 'Install Docker' },
   { phase: 'configure_firewall', label: 'Configure firewall' },
   { phase: 'install_nodejs', label: 'Install Node.js' },
-  { phase: 'install_openclaw', label: 'Install OpenClaw' },
+  { phase: 'install_roboclaw', label: 'Install RoboClaw' },
   { phase: 'verify', label: 'Verify installation' },
   { phase: 'success', label: 'Complete' },
 ]
@@ -290,9 +290,9 @@ function SuccessPanel({ result, onCopy, onDownload, onReset }: any) {
           <label className="text-sm text-gray-400 block mb-2">SSH Command</label>
           <div className="flex items-center gap-2">
             <code className="flex-1 text-terminal-command font-mono text-sm">
-              ssh -i openclaw_key root@{result.ip}
+              ssh -i roboclaw_key root@{result.ip}
             </code>
-            <button onClick={() => onCopy(`ssh -i openclaw_key root@${result.ip}`)} className="p-2 hover:bg-white/10 rounded">
+            <button onClick={() => onCopy(`ssh -i roboclaw_key root@${result.ip}`)} className="p-2 hover:bg-white/10 rounded">
               <Copy className="w-4 h-4" />
             </button>
           </div>

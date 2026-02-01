@@ -84,7 +84,7 @@ export default function InstanceCard({ instance, onSetupClick, onDeleteClick, is
             pnpm: <span className="text-terminal-success">{instance.software.pnpm}</span>
           </div>
           <div className="text-gray-300">
-            OpenClaw: <span className="text-terminal-success">{instance.software.openclaw}</span>
+            RoboClaw: <span className="text-terminal-success">{instance.software.roboclaw}</span>
           </div>
         </div>
       </div>
@@ -103,7 +103,7 @@ export default function InstanceCard({ instance, onSetupClick, onDeleteClick, is
             onClick={() => onSetupClick(instance.name)}
           >
             <Terminal className="w-4 h-4 mr-2" />
-            Setup OpenClaw
+            Setup RoboClaw
           </Button>
         )}
 

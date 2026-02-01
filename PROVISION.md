@@ -1,13 +1,13 @@
-# Automated Hetzner VPS Provisioning with Clawdbot
+# Automated Hetzner VPS Provisioning with RoboClaw
 
-A one-command Ansible playbook that provisions a VPS in Finland (Helsinki) and automatically installs Clawdbot with full security hardening.
+A one-command Ansible playbook that provisions a VPS in Finland (Helsinki) and automatically installs RoboClaw with full security hardening.
 
 ## What We Built
 
 An automated infrastructure-as-code solution that:
 
 1. **Provisions Infrastructure** - Creates a Hetzner Cloud VPS in Helsinki datacenter
-2. **Installs Clawdbot** - Fully automated setup using the clawdbot-ansible playbook
+2. **Installs RoboClaw** - Fully automated setup using the roboclaw-ansible playbook
 3. **Security Hardening** - UFW firewall, Docker isolation
 4. **One Command Deploy** - Everything runs from your local machine
 
@@ -16,10 +16,10 @@ An automated infrastructure-as-code solution that:
 ```
 Local Machine                     Remote VPS (Helsinki)
 ├── hetzner-finland-fast.yml →   ├── Ubuntu 24.04 ARM
-├── clawdbot-ansible/      →     ├── Docker CE
+├── roboclaw-ansible/      →     ├── Docker CE
 ├── run-hetzner.sh         →     ├── Node.js 22 + pnpm
 ├── .env (API token)       →     ├── UFW Firewall
-└── hetzner_key (SSH)      →     └── Clawdbot 2026.1.24-3
+└── hetzner_key (SSH)      →     └── RoboClaw 2026.1.24-3
 ```
 
 ## How It Works
@@ -41,12 +41,12 @@ The playbook runs **three sequential plays**:
 - Verify connectivity
 ```
 
-### Play 3: Install Clawdbot
+### Play 3: Install RoboClaw
 ```yaml
-- Run clawdbot-ansible role from local machine
+- Run roboclaw-ansible role from local machine
 - Install: Docker, Node.js, UFW
-- Create clawdbot user with systemd lingering
-- Install Clawdbot via pnpm
+- Create roboclaw user with systemd lingering
+- Install RoboClaw via pnpm
 - Configure environment
 ```
 
@@ -56,7 +56,7 @@ The playbook runs **three sequential plays**:
 .
 ├── PROVISION.md                    # This file
 ├── HETZNER_SETUP.md               # Quick start guide
-├── CLAUDE.md                      # Guide for Claude Code
+├── ROBOCLAW_GUIDE.md              # RoboClaw integration guide
 ├── hetzner-finland-fast.yml       # Main playbook (3 plays)
 ├── hetzner-requirements.yml       # Ansible Galaxy dependencies
 ├── run-hetzner.sh                 # Wrapper script (virtualenv + .env)
@@ -69,10 +69,10 @@ The playbook runs **three sequential plays**:
 ├── available-server-types.txt     # Cached server type list
 ├── instances/                     # Instance artifacts (YAML)
 ├── venv/                          # Python virtualenv for Ansible
-└── clawdbot-ansible/              # Clawdbot installation playbook
-    ├── playbook.yml               # Clawdbot installer
+└── roboclaw-ansible/              # RoboClaw installation playbook
+    ├── playbook.yml               # RoboClaw installer
     ├── requirements.yml           # Ansible collections
-    └── roles/clawdbot/            # Main installation role
+    └── roles/roboclaw/            # Main installation role
         ├── tasks/
         │   ├── main.yml           # Task orchestration
         │   ├── system-tools.yml   # Base packages
@@ -80,7 +80,7 @@ The playbook runs **three sequential plays**:
         │   ├── docker.yml         # Docker CE
         │   ├── firewall.yml       # UFW configuration
         │   ├── nodejs.yml         # Node.js + pnpm
-        │   └── clawdbot.yml       # Clawdbot installation
+        │   └── roboclaw.yml       # RoboClaw installation
         └── defaults/main.yml      # Default variables
 ```
 
@@ -99,14 +99,14 @@ The playbook runs **three sequential plays**:
 - Docker: Latest CE
 - Node.js: v22.22.0
 - pnpm: 10.28.2
-- Clawdbot: 2026.1.24-3
+- RoboClaw: 2026.1.24-3
 
 **Security**:
 - UFW Firewall: Enabled
   - Allowed: SSH (22)
   - Default: Deny incoming, allow outgoing
 - Docker: DOCKER-USER chain configured
-- User: clawdbot (non-root, sudo access)
+- User: roboclaw (non-root, sudo access)
 
 ## Usage
 
@@ -129,7 +129,7 @@ EOF
 ### Installation
 
 **Installs (~2-3 minutes):**
-- Essentials: Docker, Node.js, UFW, Clawdbot
+- Essentials: Docker, Node.js, UFW, RoboClaw
 - Perfect for production or quick testing
 
 ### Connect to Server
@@ -141,11 +141,11 @@ ssh -i hetzner_key root@$(cat finland-instance-ip.txt)
 # Or directly
 ssh -i hetzner_key root@65.21.149.78
 
-# Switch to clawdbot user
-sudo su - clawdbot
+# Switch to roboclaw user
+sudo su - roboclaw
 
 # Run onboarding
-clawdbot onboard --install-daemon
+openclaw onboard --install-daemon
 ```
 
 ### Re-run Playbook
@@ -221,7 +221,7 @@ vars:
   server_type: "cax11"                   # Instance size (see list-server-types.sh)
   location: "hel1"                       # Helsinki (hel1), Falkenstein (fsn1), Nuremberg (nbg1)
   image: "ubuntu-24.04"                  # OS image
-  clawdbot_install_mode: "release"       # or "development"
+  roboclaw_install_mode: "release"       # or "development"
   nodejs_version: "22.x"                 # Node.js version
 ```
 
@@ -229,12 +229,12 @@ vars:
 
 **System Tools (Linux)**:
 - Essential packages: curl, wget, git, vim, zsh, jq, tmux, htop
-- oh-my-zsh for clawdbot user
+- oh-my-zsh for roboclaw user
 - Global git configuration
 
 **User Management**:
-- clawdbot system user created
-- Home: `/home/clawdbot`
+- roboclaw system user created
+- Home: `/home/roboclaw`
 - Shell: zsh with oh-my-zsh
 - Sudo: NOPASSWD access
 - Systemd lingering enabled
@@ -255,11 +255,11 @@ vars:
 **Node.js**:
 - Node.js 22.x via NodeSource
 - pnpm package manager (global)
-- Configured for clawdbot user
+- Configured for roboclaw user
 
-**Clawdbot**:
-- Installed via: `pnpm install -g clawdbot@latest`
-- Config directory: `/home/clawdbot/.clawdbot/`
+**RoboClaw**:
+- Installed via: `pnpm install -g roboclaw@latest`
+- Config directory: `/home/roboclaw/.roboclaw/`
 - Subdirectories: sessions, credentials, data, logs
 - Version: 2026.1.24-3
 
@@ -296,14 +296,14 @@ vars:
 ssh -i hetzner_key root@65.21.149.78
 
 # 2. Switch user
-sudo su - clawdbot
+sudo su - roboclaw
 
 # 3. Run onboarding wizard
-clawdbot onboard --install-daemon
+openclaw onboard --install-daemon
 
 # This will:
 # - Configure messaging provider (WhatsApp/Telegram/Signal)
-# - Create clawdbot.json config
+# - Create roboclaw.json config
 # - Install systemd service
 # - Start the daemon
 ```
@@ -405,9 +405,9 @@ Total tasks: 94
 Success rate: 100%
 ```
 
-## What's Different from clawdbot-ansible
+## What's Different from roboclaw-ansible
 
-**Original clawdbot-ansible**:
+**Original roboclaw-ansible**:
 - Runs ON the target machine
 - Requires manual login
 - Single-machine focus
@@ -485,14 +485,14 @@ Potential additions:
 
 - Hetzner Cloud Console: https://console.hetzner.cloud/
 - Hetzner API Docs: https://docs.hetzner.cloud/
-- Clawdbot Docs: (from clawdbot-ansible/README.md)
+- RoboClaw Docs: (from roboclaw-ansible/README.md)
 - Ansible Docs: https://docs.ansible.com/
 
 ## Summary
 
 We've built a production-ready, automated VPS provisioning system that:
 - ✅ Provisions infrastructure as code
-- ✅ Installs Clawdbot with full dependencies
+- ✅ Installs RoboClaw with full dependencies
 - ✅ Security hardened by default
 - ✅ Runs from local machine
 - ✅ Idempotent and reliable

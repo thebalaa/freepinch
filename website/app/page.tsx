@@ -16,7 +16,7 @@ export default function Home() {
         <div className="container mx-auto px-4 py-16 relative z-10">
           <div className="max-w-4xl mx-auto text-center">
             <h1 className="text-6xl md:text-7xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-white via-white to-gray-400">
-              Deploy Open Claw in 2 Minutes
+              Deploy OpenClaw in 2 Minutes
             </h1>
             <p className="text-xl md:text-2xl text-gray-400 mb-12 max-w-2xl mx-auto">
               Automated VPS provisioning with OpenClaw, Docker, and all dependencies. Just paste your Hetzner API token and launch.
@@ -43,7 +43,7 @@ export default function Home() {
                     <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
                     <div className="w-3 h-3 rounded-full bg-green-500"></div>
                   </div>
-                  <span className="text-sm text-gray-400 ml-2">openclaw-deploy</span>
+                  <span className="text-sm text-gray-400 ml-2">roboclaw-deploy</span>
                 </div>
                 <div className="p-4 font-mono text-sm space-y-1">
                   <div className="text-gray-500">[12:34:56]</div>
@@ -51,7 +51,7 @@ export default function Home() {
                   <div className="text-terminal-success">✓ Server created (IP: 65.21.149.78)</div>
                   <div className="text-terminal-command">$ Installing Docker CE...</div>
                   <div className="text-terminal-success">✓ Docker installed</div>
-                  <div className="text-terminal-command">$ Installing OpenClaw...</div>
+                  <div className="text-terminal-command">$ Installing RoboClaw...</div>
                   <div className="text-terminal-success">✓ Deployment completed in 127s</div>
                   <div className="text-white mt-2 animate-pulse">▊</div>
                 </div>
@@ -83,7 +83,7 @@ export default function Home() {
             />
             <FeatureCard
               icon={<Zap className="w-8 h-8" />}
-              title="OpenClaw"
+              title="RoboClaw"
               description="Pre-installed and ready to onboard"
             />
             <FeatureCard
@@ -118,7 +118,7 @@ export default function Home() {
             <StepCard
               number={3}
               title="SSH In & Go"
-              description="Download the SSH key, connect to your server, and onboard OpenClaw"
+              description="Download the SSH key, connect to your server, and onboard RoboClaw"
             />
           </div>
         </div>

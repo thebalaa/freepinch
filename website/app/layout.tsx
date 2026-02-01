@@ -2,8 +2,8 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'OpenClaw - Deploy in 2 Minutes',
-  description: 'One-click deployment of OpenClaw on Hetzner Cloud VPS',
+  title: 'RoboClaw - Deploy in 2 Minutes',
+  description: 'One-click deployment of RoboClaw on Hetzner Cloud VPS',
 }
 
 export default function RootLayout({
@@ -18,7 +18,7 @@ export default function RootLayout({
           <div className="container mx-auto px-4">
             <div className="flex items-center justify-between h-16">
               <a href="/" className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-accent-purple to-accent-blue">
-                OpenClaw Deploy
+                RoboClaw Deploy
               </a>
               <div className="flex items-center gap-6">
                 <a href="/" className="text-gray-300 hover:text-white transition-colors">
