@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
@@ -247,8 +247,20 @@ const DEPLOYMENT_PHASES = [
 ]
 
 function TerminalView({ logs }: { logs: LogEntry[] }) {
+  const terminalRef = useRef<HTMLDivElement>(null)
+
+  // Auto-scroll to bottom when new logs arrive
+  useEffect(() => {
+    if (terminalRef.current) {
+      terminalRef.current.scrollTop = terminalRef.current.scrollHeight
+    }
+  }, [logs])
+
   return (
-    <div className="p-4 font-mono text-sm max-h-[400px] overflow-y-auto space-y-1 bg-terminal-bg">
+    <div
+      ref={terminalRef}
+      className="p-4 font-mono text-sm max-h-[400px] overflow-y-auto space-y-1 bg-terminal-bg"
+    >
       {logs.map((log, idx) => (
         <div key={idx} className={getLogColor(log.level)}>
           <span className="text-gray-600 mr-2">

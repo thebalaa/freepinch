@@ -3,16 +3,19 @@
 import { type Instance } from '@/lib/types'
 import Badge from './Badge'
 import Button from './Button'
-import { Copy, Server, CheckCircle2, AlertCircle, Terminal, Trash2, Loader2 } from 'lucide-react'
+import { Copy, Server, CheckCircle2, AlertCircle, Terminal, Trash2, Loader2, Plug, Unplug, RefreshCw, ExternalLink } from 'lucide-react'
 
 interface InstanceCardProps {
   instance: Instance
   onSetupClick: (instanceName: string) => void
   onDeleteClick: (instanceName: string) => void
+  onTunnelToggle: (instanceName: string) => void
+  onReconfigureClick: (instanceName: string) => void
   isDeleting?: boolean
+  tunnelStatus?: 'connected' | 'disconnected' | 'connecting' | 'disconnecting'
 }
 
-export default function InstanceCard({ instance, onSetupClick, onDeleteClick, isDeleting = false }: InstanceCardProps) {
+export default function InstanceCard({ instance, onSetupClick, onDeleteClick, onTunnelToggle, onReconfigureClick, isDeleting = false, tunnelStatus = 'disconnected' }: InstanceCardProps) {
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text)
   }
@@ -86,6 +89,11 @@ export default function InstanceCard({ instance, onSetupClick, onDeleteClick, is
           <div className="text-gray-300">
             RoboClaw: <span className="text-terminal-success">{instance.software.roboclaw}</span>
           </div>
+          {instance.software.gemini && (
+            <div className="text-gray-300">
+              Gemini: <span className="text-terminal-success">{instance.software.gemini}</span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -108,10 +116,33 @@ export default function InstanceCard({ instance, onSetupClick, onDeleteClick, is
         )}
 
         {instance.status === 'active' && instance.onboardingCompleted && (
-          <div className="flex-1 flex items-center gap-2 text-sm text-terminal-success">
-            <CheckCircle2 className="w-4 h-4" />
-            <span>Ready to use</span>
-          </div>
+          <button
+            onClick={() => onTunnelToggle(instance.name)}
+            disabled={tunnelStatus === 'connecting' || tunnelStatus === 'disconnecting'}
+            className={`flex-1 px-4 py-2 border rounded-lg transition-colors text-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${
+              tunnelStatus === 'connected'
+                ? 'bg-green-500/10 hover:bg-green-500/20 border-green-500/30 hover:border-green-500/50 text-green-400'
+                : 'bg-accent-purple/10 hover:bg-accent-purple/20 border-accent-purple/30 hover:border-accent-purple/50 text-accent-purple'
+            }`}
+            title={tunnelStatus === 'connected' ? 'Disconnect tunnel' : 'Connect tunnel'}
+          >
+            {tunnelStatus === 'connecting' || tunnelStatus === 'disconnecting' ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                {tunnelStatus === 'connecting' ? 'Connecting...' : 'Disconnecting...'}
+              </>
+            ) : tunnelStatus === 'connected' ? (
+              <>
+                <Unplug className="w-4 h-4" />
+                Disconnect
+              </>
+            ) : (
+              <>
+                <Plug className="w-4 h-4" />
+                Connect
+              </>
+            )}
+          </button>
         )}
 
         {instance.status === 'deleted' && (
@@ -123,6 +154,26 @@ export default function InstanceCard({ instance, onSetupClick, onDeleteClick, is
 
         {instance.status === 'active' && (
           <>
+            {tunnelStatus === 'connected' && (
+              <a
+                href="http://localhost:18789"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-2 bg-accent-cyan/10 hover:bg-accent-cyan/20 border border-accent-cyan/30 hover:border-accent-cyan/50 text-accent-cyan hover:text-accent-cyan rounded-lg transition-colors text-sm flex items-center gap-2"
+                title="Open Gateway"
+              >
+                <ExternalLink className="w-4 h-4" />
+                Gateway
+              </a>
+            )}
+            <button
+              onClick={() => onReconfigureClick(instance.name)}
+              className="px-4 py-2 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 hover:border-blue-500/50 text-blue-400 hover:text-blue-300 rounded-lg transition-colors text-sm flex items-center gap-2"
+              title="Reconfigure instance"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Reconfigure
+            </button>
             <button
               onClick={() => copyToClipboard(sshCommand)}
               className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg transition-colors text-sm flex items-center gap-2"

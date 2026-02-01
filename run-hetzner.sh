@@ -64,6 +64,41 @@ case "${1:-provision}" in
         echo "Running teardown playbook..."
         ansible-playbook hetzner-teardown.yml --tags delete "$@"
         ;;
+    reconfigure)
+        shift
+        INSTANCE_NAME="${1:?Usage: run-hetzner.sh reconfigure <instance-name> [ansible args]}"
+        shift
+
+        # Read IP and SSH key from instance artifact
+        ARTIFACT="./instances/${INSTANCE_NAME}.yml"
+        if [ ! -f "$ARTIFACT" ]; then
+            echo "Error: Instance artifact not found: $ARTIFACT"
+            exit 1
+        fi
+
+        IP=$(grep '^\s*ip:' "$ARTIFACT" | head -1 | awk '{print $2}')
+        KEY_FILE=$(grep '^\s*key_file:' "$ARTIFACT" | head -1 | awk '{print $2}' | tr -d '"' | sed 's/^"\(.*\)"$/\1/')
+
+        if [ -z "$IP" ]; then
+            echo "Error: Could not extract IP from $ARTIFACT"
+            exit 1
+        fi
+
+        if [ -z "$KEY_FILE" ]; then
+            echo "Error: Could not extract key_file from $ARTIFACT"
+            exit 1
+        fi
+
+        echo "🔄 Reconfiguring instance: $INSTANCE_NAME"
+        echo "   IP: $IP"
+        echo "   SSH Key: $KEY_FILE"
+        echo ""
+
+        ansible-playbook reconfigure.yml \
+            -i "${IP}," \
+            --private-key="${KEY_FILE}" \
+            "$@"
+        ;;
     provision|*)
         [ $# -gt 0 ] && shift
         echo "⚡ Provisioning and installing RoboClaw (~2-3 minutes)..."

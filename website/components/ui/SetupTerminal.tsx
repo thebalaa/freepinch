@@ -2,14 +2,17 @@
 
 import { useState } from 'react'
 import Button from './Button'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Plug, Unplug } from 'lucide-react'
 
 interface SetupTerminalProps {
   url: string
+  instanceName: string
   onComplete: () => void
+  onTunnelToggle: (instanceName: string) => void
+  tunnelStatus: 'connected' | 'disconnected' | 'connecting' | 'disconnecting'
 }
 
-export default function SetupTerminal({ url, onComplete }: SetupTerminalProps) {
+export default function SetupTerminal({ url, instanceName, onComplete, onTunnelToggle, tunnelStatus }: SetupTerminalProps) {
   const [isLoading, setIsLoading] = useState(true)
   const [hasError, setHasError] = useState(false)
 
@@ -79,21 +82,54 @@ export default function SetupTerminal({ url, onComplete }: SetupTerminalProps) {
           />
         </div>
 
-        {/* Completion Button */}
-        <div className="flex justify-center">
-          <Button
-            variant="primary"
-            size="lg"
-            onClick={onComplete}
-            className="px-12"
-          >
-            I'm Done - Complete Setup
-          </Button>
-        </div>
+        {/* Action Buttons */}
+        <div className="flex flex-col gap-4">
+          <div className="flex justify-center gap-4">
+            {/* Tunnel Connect/Disconnect Button */}
+            <button
+              onClick={() => onTunnelToggle(instanceName)}
+              disabled={tunnelStatus === 'connecting' || tunnelStatus === 'disconnecting'}
+              className={`px-8 py-3 border rounded-lg transition-colors text-sm font-semibold flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${
+                tunnelStatus === 'connected'
+                  ? 'bg-green-500/10 hover:bg-green-500/20 border-green-500/30 hover:border-green-500/50 text-green-400'
+                  : 'bg-accent-purple/10 hover:bg-accent-purple/20 border-accent-purple/30 hover:border-accent-purple/50 text-accent-purple'
+              }`}
+              title={tunnelStatus === 'connected' ? 'Disconnect tunnel (port 51121)' : 'Connect tunnel (port 51121)'}
+            >
+              {tunnelStatus === 'connecting' || tunnelStatus === 'disconnecting' ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  {tunnelStatus === 'connecting' ? 'Connecting...' : 'Disconnecting...'}
+                </>
+              ) : tunnelStatus === 'connected' ? (
+                <>
+                  <Unplug className="w-5 h-5" />
+                  Disconnect Tunnel
+                </>
+              ) : (
+                <>
+                  <Plug className="w-5 h-5" />
+                  Connect Tunnel
+                </>
+              )}
+            </button>
 
-        <p className="text-sm text-gray-500 text-center mt-4">
-          Click the button above after completing the onboarding wizard
-        </p>
+            {/* Completion Button */}
+            <Button
+              variant="primary"
+              size="lg"
+              onClick={onComplete}
+              className="px-12"
+            >
+              I'm Done - Complete Setup
+            </Button>
+          </div>
+
+          <div className="text-sm text-gray-500 text-center space-y-1">
+            <p>Connect the tunnel to access services on port 51121</p>
+            <p>Click "Complete Setup" after finishing the onboarding wizard</p>
+          </div>
+        </div>
       </div>
     </div>
   )

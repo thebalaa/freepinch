@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import type { Instance } from '@/lib/types'
 import InstanceCard from '@/components/ui/InstanceCard'
@@ -20,6 +20,11 @@ export default function InstancesPage() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
   const [instanceToDelete, setInstanceToDelete] = useState<string | null>(null)
   const [toasts, setToasts] = useState<ToastMessage[]>([])
+  const [tunnelStatuses, setTunnelStatuses] = useState<Record<string, 'connected' | 'disconnected' | 'connecting' | 'disconnecting'>>({})
+  const [reconfiguringInstance, setReconfiguringInstance] = useState<string | null>(null)
+  const [reconfigureLog, setReconfigureLog] = useState<string[]>([])
+  const [reconfigureModalOpen, setReconfigureModalOpen] = useState(false)
+  const reconfigureLogRef = useRef<HTMLDivElement>(null)
 
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -46,17 +51,44 @@ export default function InstancesPage() {
     }
   }, [searchParams])
 
+  // Auto-scroll reconfigure log to bottom
+  useEffect(() => {
+    if (reconfigureLogRef.current) {
+      reconfigureLogRef.current.scrollTop = reconfigureLogRef.current.scrollHeight
+    }
+  }, [reconfigureLog])
+
   const loadInstances = async () => {
     try {
       setLoading(true)
       const response = await fetch('/api/instances')
       const data = await response.json()
-      setInstances(data.instances || [])
+      const instanceList = data.instances || []
+      setInstances(instanceList)
+
+      // Load tunnel statuses for active, onboarded instances
+      await loadTunnelStatuses(instanceList)
     } catch (error) {
       console.error('Failed to load instances:', error)
     } finally {
       setLoading(false)
     }
+  }
+
+  const loadTunnelStatuses = async (instanceList: Instance[]) => {
+    const statuses: Record<string, 'connected' | 'disconnected'> = {}
+    for (const inst of instanceList) {
+      if (inst.status === 'active' && inst.onboardingCompleted) {
+        try {
+          const res = await fetch(`/api/instances/${inst.name}/tunnel`)
+          const data = await res.json()
+          statuses[inst.name] = data.active ? 'connected' : 'disconnected'
+        } catch {
+          statuses[inst.name] = 'disconnected'
+        }
+      }
+    }
+    setTunnelStatuses(statuses)
   }
 
   const handleSetupClick = async (instanceName: string) => {
@@ -166,12 +198,111 @@ export default function InstancesPage() {
     setInstanceToDelete(null)
   }
 
+  const handleTunnelToggle = async (instanceName: string) => {
+    const currentStatus = tunnelStatuses[instanceName]
+
+    if (currentStatus === 'connected') {
+      // Disconnect
+      setTunnelStatuses(prev => ({ ...prev, [instanceName]: 'disconnecting' }))
+      try {
+        await fetch(`/api/instances/${instanceName}/tunnel`, { method: 'DELETE' })
+        setTunnelStatuses(prev => ({ ...prev, [instanceName]: 'disconnected' }))
+        addToast(`Tunnel disconnected from ${instanceName}`, 'info')
+      } catch (error) {
+        setTunnelStatuses(prev => ({ ...prev, [instanceName]: 'connected' }))
+        addToast('Failed to disconnect tunnel', 'error')
+      }
+    } else {
+      // Connect
+      setTunnelStatuses(prev => ({ ...prev, [instanceName]: 'connecting' }))
+      try {
+        const res = await fetch(`/api/instances/${instanceName}/tunnel`, { method: 'POST' })
+        if (!res.ok) {
+          const data = await res.json()
+          throw new Error(data.error || 'Failed to start tunnel')
+        }
+        setTunnelStatuses(prev => ({ ...prev, [instanceName]: 'connected' }))
+        addToast(`Gateway tunnel connected to ${instanceName} on port 18789`, 'success')
+      } catch (error) {
+        setTunnelStatuses(prev => ({ ...prev, [instanceName]: 'disconnected' }))
+        addToast(
+          `Failed to connect tunnel: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          'error'
+        )
+      }
+    }
+  }
+
+  const handleReconfigureClick = async (instanceName: string) => {
+    setReconfiguringInstance(instanceName)
+    setReconfigureLog([])
+    setReconfigureModalOpen(true)
+
+    try {
+      const response = await fetch(`/api/instances/${instanceName}/reconfigure`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to start reconfiguration')
+      }
+
+      const reader = response.body?.getReader()
+      const decoder = new TextDecoder()
+
+      if (!reader) {
+        throw new Error('No response body')
+      }
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        const chunk = decoder.decode(value)
+        const lines = chunk.split('\n')
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6))
+              if (data.message) {
+                setReconfigureLog(prev => [...prev, data.message])
+              }
+            } catch {
+              // Ignore parse errors
+            }
+          } else if (line.startsWith('event: success')) {
+            addToast(`Reconfiguration completed successfully for ${instanceName}`, 'success')
+          } else if (line.startsWith('event: error')) {
+            addToast(`Reconfiguration failed for ${instanceName}`, 'error')
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Reconfigure error:', error)
+      addToast(
+        `Failed to reconfigure: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        'error'
+      )
+    } finally {
+      setReconfiguringInstance(null)
+    }
+  }
+
   // Show setup terminal if in setup mode
   if (setupInstance && setupUrl) {
     return (
       <div className="min-h-screen py-8">
         <div className="container mx-auto px-4">
-          <SetupTerminal url={setupUrl} onComplete={handleSetupComplete} />
+          <SetupTerminal
+            url={setupUrl}
+            instanceName={setupInstance}
+            onComplete={handleSetupComplete}
+            onTunnelToggle={handleTunnelToggle}
+            tunnelStatus={tunnelStatuses[setupInstance] || 'disconnected'}
+          />
         </div>
       </div>
     )
@@ -235,7 +366,10 @@ export default function InstancesPage() {
                     instance={instance}
                     onSetupClick={handleSetupClick}
                     onDeleteClick={handleDeleteClick}
+                    onTunnelToggle={handleTunnelToggle}
+                    onReconfigureClick={handleReconfigureClick}
                     isDeleting={deletingInstance === instance.name}
+                    tunnelStatus={tunnelStatuses[instance.name] || 'disconnected'}
                   />
                 ))}
               </div>
@@ -285,6 +419,58 @@ export default function InstancesPage() {
               Delete Instance
             </button>
           </div>
+        </div>
+      </Modal>
+
+      {/* Reconfigure Modal */}
+      <Modal
+        isOpen={reconfigureModalOpen}
+        onClose={() => {
+          if (!reconfiguringInstance) {
+            setReconfigureModalOpen(false)
+            setReconfigureLog([])
+          }
+        }}
+        title={`Reconfiguring ${reconfiguringInstance || ''}`}
+      >
+        <div className="space-y-4">
+          {/* Log Output */}
+          <div
+            ref={reconfigureLogRef}
+            className="bg-terminal-bg rounded-lg p-4 font-mono text-sm max-h-96 overflow-y-auto"
+          >
+            {reconfigureLog.length === 0 ? (
+              <div className="text-gray-400">Starting reconfiguration...</div>
+            ) : (
+              reconfigureLog.map((line, index) => (
+                <div key={index} className="text-gray-300 whitespace-pre-wrap">
+                  {line}
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Close Button */}
+          {!reconfiguringInstance && (
+            <div className="flex justify-end">
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setReconfigureModalOpen(false)
+                  setReconfigureLog([])
+                }}
+              >
+                Close
+              </Button>
+            </div>
+          )}
+
+          {reconfiguringInstance && (
+            <div className="flex items-center justify-center gap-2 text-gray-400">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>Reconfiguring...</span>
+            </div>
+          )}
         </div>
       </Modal>
 

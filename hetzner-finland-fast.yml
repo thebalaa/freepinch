@@ -113,6 +113,7 @@
           ✅ Node.js 22 + pnpm
           ✅ UFW Firewall
           ✅ RoboClaw
+          ✅ Gemini CLI
           ✅ ttyd (browser terminal)
 
           Skipping (for speed):
@@ -301,6 +302,60 @@
         group: "{{ roboclaw_user }}"
         mode: '0644'
 
+    - name: Configure .profile for roboclaw user (for non-interactive login shells)
+      ansible.builtin.blockinfile:
+        path: "{{ roboclaw_home }}/.profile"
+        marker: "# {mark} ANSIBLE MANAGED BLOCK - RoboClaw"
+        block: |
+          # pnpm configuration
+          export PNPM_HOME="{{ roboclaw_home }}/.local/share/pnpm"
+          export PATH="{{ roboclaw_home }}/.local/bin:$PNPM_HOME:$PATH"
+        create: false
+        owner: "{{ roboclaw_user }}"
+        group: "{{ roboclaw_user }}"
+        mode: '0644'
+
+    - name: Install Gemini CLI globally
+      ansible.builtin.shell:
+        cmd: pnpm install -g @google/gemini-cli
+        executable: /bin/bash
+      become: true
+      become_user: "{{ roboclaw_user }}"
+      environment:
+        HOME: "{{ roboclaw_home }}"
+        PNPM_HOME: "{{ roboclaw_home }}/.local/share/pnpm"
+        PATH: "{{ roboclaw_home }}/.local/bin:{{ ansible_env.PATH }}"
+      register: gemini_install
+
+    - name: Extract Gemini CLI OAuth credentials from pnpm installation
+      ansible.builtin.shell: |
+        OAUTH_FILE=$(find {{ roboclaw_home }}/.local/share/pnpm -path '*gemini-cli-core*/oauth2.js' 2>/dev/null | head -1)
+        if [ -f "$OAUTH_FILE" ]; then
+          CLIENT_ID=$(grep -oP "OAUTH_CLIENT_ID = '\K[^']+" "$OAUTH_FILE" || echo "")
+          CLIENT_SECRET=$(grep -oP "OAUTH_CLIENT_SECRET = '\K[^']+" "$OAUTH_FILE" || echo "")
+          if [ -n "$CLIENT_ID" ] && [ -n "$CLIENT_SECRET" ]; then
+            echo "CLIENT_ID=$CLIENT_ID"
+            echo "CLIENT_SECRET=$CLIENT_SECRET"
+          fi
+        fi
+      register: gemini_oauth_creds
+      changed_when: false
+      failed_when: false
+
+    - name: Add Gemini OAuth credentials to .profile
+      ansible.builtin.blockinfile:
+        path: "{{ roboclaw_home }}/.profile"
+        marker: "# {mark} ANSIBLE MANAGED BLOCK - Gemini OAuth"
+        block: |
+          # Gemini CLI OAuth credentials (extracted from pnpm installation)
+          export GEMINI_CLI_OAUTH_CLIENT_ID='{{ gemini_oauth_creds.stdout_lines[0].split('=')[1] }}'
+          export GEMINI_CLI_OAUTH_CLIENT_SECRET='{{ gemini_oauth_creds.stdout_lines[1].split('=')[1] }}'
+        create: false
+        owner: "{{ roboclaw_user }}"
+        group: "{{ roboclaw_user }}"
+        mode: '0644'
+      when: gemini_oauth_creds.stdout_lines | length >= 2
+
     - name: Verify roboclaw installation
       ansible.builtin.shell: |
         export PATH="{{ roboclaw_home }}/.local/bin:$PATH"
@@ -309,6 +364,16 @@
       become_user: "{{ roboclaw_user }}"
       register: roboclaw_version
       changed_when: false
+
+    - name: Verify gemini installation
+      ansible.builtin.shell: |
+        export PATH="{{ roboclaw_home }}/.local/bin:$PATH"
+        gemini --version
+      become: true
+      become_user: "{{ roboclaw_user }}"
+      register: gemini_version
+      changed_when: false
+      failed_when: false
 
     - name: Display installation complete
       ansible.builtin.debug:
@@ -325,6 +390,7 @@
           • pnpm (latest)
           • UFW Firewall
           • RoboClaw {{ roboclaw_version.stdout }}
+          • Gemini CLI {{ gemini_version.stdout | default('installed', true) }}
           • ttyd (browser terminal)
 
           ⏭️  Skipped for speed:
@@ -383,6 +449,7 @@
                 nodejs: {{ nodejs_version_output.stdout }}
                 pnpm: {{ pnpm_version_output.stdout }}
                 roboclaw: {{ roboclaw_version.stdout }}
+                gemini: {{ gemini_version.stdout | default('installed', true) }}
                 ttyd: installed
               configuration:
                 roboclaw_user: {{ roboclaw_user }}

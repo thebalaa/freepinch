@@ -73,10 +73,20 @@ export async function POST(request: Request, context: RouteContext) {
     await startTtydOnRemote(ip, privateKey, remotePort, name)
     console.log(`[Setup] ttyd started successfully`)
 
-    // Start SSH tunnel using tunnel manager
-    console.log(`[Setup] Creating SSH tunnel...`)
+    // Start SSH tunnel for ttyd using tunnel manager
+    console.log(`[Setup] Creating SSH tunnel for ttyd...`)
     const localPort = await tunnelManager.startTunnel(name, ip, keyPath, remotePort)
-    console.log(`[Setup] SSH tunnel created on port ${localPort}`)
+    console.log(`[Setup] ttyd SSH tunnel created on port ${localPort}`)
+
+    // Start SSH tunnel for OpenClaw gateway (port 18789)
+    console.log(`[Setup] Creating SSH tunnel for OpenClaw gateway (port 18789)...`)
+    try {
+      await tunnelManager.startFixedPortTunnel(`${name}:gateway`, ip, keyPath, 18789, 18789)
+      console.log(`[Setup] Gateway SSH tunnel created on port 18789`)
+    } catch (error) {
+      console.warn(`[Setup] Warning: Could not create gateway tunnel on port 18789:`, error)
+      // Don't fail the setup if gateway tunnel fails - it's not critical for basic ttyd access
+    }
 
     // Wait for ttyd to be ready and accepting connections (30 second timeout)
     console.log(`[Setup] Waiting for ttyd to become available...`)
@@ -88,6 +98,7 @@ export async function POST(request: Request, context: RouteContext) {
         url: `http://localhost:${localPort}`,
         tunnelActive: true,
         port: localPort,
+        gatewayPort: 18789,
       }),
       { headers: { 'Content-Type': 'application/json' } }
     )
@@ -106,8 +117,9 @@ export async function DELETE(request: Request, context: RouteContext) {
   try {
     const { name } = await context.params
 
-    // Stop the tunnel
+    // Stop both tunnels (ttyd and gateway)
     tunnelManager.stopTunnel(name)
+    tunnelManager.stopTunnel(`${name}:gateway`)
 
     return new Response(
       JSON.stringify({ tunnelActive: false }),
@@ -177,10 +189,12 @@ function startTtydOnRemote(
         const scriptPath = `/usr/local/bin/roboclaw-onboard-${instanceName}.sh`
         const logPath = `/tmp/ttyd-${instanceName}.log`
 
-        // Step 1: Create wrapper script
+        // Step 1: Create wrapper script with explicit PATH
         console.log(`[Setup] Creating wrapper script`)
-        await execSSHCommand(conn, `echo '#!/bin/bash' > ${scriptPath}`)
-        await execSSHCommand(conn, `echo 'su -l roboclaw -c "openclaw onboard"' >> ${scriptPath}`)
+        await execSSHCommand(conn, `cat > ${scriptPath} << 'EOF'
+#!/bin/bash
+su -l roboclaw -c "export PATH=/home/roboclaw/.local/bin:\\\$PATH && openclaw onboard"
+EOF`)
         await execSSHCommand(conn, `chmod +x ${scriptPath}`)
 
         // Step 2: Kill existing ttyd
