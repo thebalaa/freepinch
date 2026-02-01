@@ -10,40 +10,52 @@
   vars:
     openclaw_state: started        # 'started' or 'stopped'
     openclaw_enabled: true         # whether to enable/disable at boot
+    openclaw_service_name: openclaw-gateway  # actual systemd service name
 
   tasks:
     - name: Check if openclaw service unit exists
       ansible.builtin.stat:
-        path: /etc/systemd/system/openclaw.service
+        path: /etc/systemd/system/{{ openclaw_service_name }}.service
       register: openclaw_unit_file
+
+    - name: Check if user systemd directory exists
+      ansible.builtin.stat:
+        path: /home/roboclaw/.config/systemd/user
+      register: user_systemd_dir
+      when: not openclaw_unit_file.stat.exists
 
     - name: Check user-level systemd unit
       ansible.builtin.stat:
-        path: /home/roboclaw/.config/systemd/user/openclaw.service
+        path: /home/roboclaw/.config/systemd/user/{{ openclaw_service_name }}.service
       register: openclaw_user_unit_file
-      when: not openclaw_unit_file.stat.exists
+      when: >
+        not openclaw_unit_file.stat.exists and
+        user_systemd_dir.stat.exists is defined and
+        user_systemd_dir.stat.exists
 
     - name: Fail gracefully if service unit not found
       ansible.builtin.fail:
         msg: >
           The openclaw systemd service unit was not found at
-          /etc/systemd/system/openclaw.service or
-          /home/roboclaw/.config/systemd/user/openclaw.service.
-          Please run 'openclaw onboard' first to create the service.
+          /etc/systemd/system/{{ openclaw_service_name }}.service or
+          /home/roboclaw/.config/systemd/user/{{ openclaw_service_name }}.service.
+          Please run 'openclaw gateway install' to create the service.
       when: >
         not openclaw_unit_file.stat.exists and
-        (openclaw_user_unit_file is not defined or not openclaw_user_unit_file.stat.exists)
+        (openclaw_user_unit_file is not defined or
+         not openclaw_user_unit_file.stat is defined or
+         not openclaw_user_unit_file.stat.exists)
 
     - name: Manage openclaw system service
       ansible.builtin.systemd:
-        name: openclaw
+        name: "{{ openclaw_service_name }}"
         state: "{{ openclaw_state }}"
         enabled: "{{ openclaw_enabled }}"
       when: openclaw_unit_file.stat.exists
 
     - name: Manage openclaw user service
       ansible.builtin.systemd:
-        name: openclaw
+        name: "{{ openclaw_service_name }}"
         state: "{{ openclaw_state }}"
         enabled: "{{ openclaw_enabled }}"
         scope: user
