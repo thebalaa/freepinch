@@ -5,26 +5,10 @@ const nextConfig: NextConfig = {
   images: {
     unoptimized: true,
   },
-  webpack: (config, { isServer }) => {
-    if (!isServer) {
-      // Exclude ssh2 and its dependencies from client bundle
-      config.resolve.fallback = {
-        ...config.resolve.fallback,
-        fs: false,
-        net: false,
-        tls: false,
-        crypto: false,
-      }
-    }
-
-    // Exclude native modules from webpack bundling
-    config.externals = config.externals || []
-    config.externals.push({
-      'ssh2': 'commonjs ssh2',
-    })
-
-    return config
-  },
+  // Next.js 16 uses Turbopack by default
+  turbopack: {},
+  // Exclude ssh2 from bundling (used in API routes which won't be in static export)
+  serverExternalPackages: ['ssh2'],
 }
 
 export default nextConfig

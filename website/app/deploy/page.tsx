@@ -5,8 +5,9 @@ import Link from 'next/link'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import Badge from '@/components/ui/Badge'
+import SetupTerminal from '@/components/ui/SetupTerminal'
 import { useDeploymentStream } from '@/hooks/useDeploymentStream'
-import { Copy, Download, CheckCircle2, XCircle, Terminal as TerminalIcon, ChevronDown, ChevronUp, Rocket, Server, Zap } from 'lucide-react'
+import { Copy, Download, CheckCircle2, XCircle, Terminal as TerminalIcon, ChevronDown, ChevronUp, Rocket, Server, Zap, Loader2 } from 'lucide-react'
 import type { LogEntry } from '@/lib/types'
 
 export default function DeployPage() {
@@ -14,6 +15,9 @@ export default function DeployPage() {
   const [serverName, setServerName] = useState('')
   const [tokenError, setTokenError] = useState('')
   const [showConsole, setShowConsole] = useState(false)
+  const [setupUrl, setSetupUrl] = useState<string | null>(null)
+  const [setupLoading, setSetupLoading] = useState(false)
+  const [tunnelStatus, setTunnelStatus] = useState<'connected' | 'disconnected' | 'connecting' | 'disconnecting'>('disconnected')
   const { logs, phase, progress, result, error, isDeploying, startDeploy, reset } = useDeploymentStream()
 
   const handleDeploy = () => {
@@ -31,6 +35,41 @@ export default function DeployPage() {
     reset()
     setToken('')
     setServerName('')
+    setSetupUrl(null)
+    setSetupLoading(false)
+    setTunnelStatus('disconnected')
+  }
+
+  // Auto-trigger setup when deployment completes
+  useEffect(() => {
+    if (result && !setupUrl && !setupLoading) {
+      startSetup()
+    }
+  }, [result])
+
+  const startSetup = async () => {
+    if (!result) return
+
+    try {
+      setSetupLoading(true)
+
+      // Call the setup endpoint to start ttyd and SSH tunnel
+      const response = await fetch(`/api/instances/${result.serverName}/setup`, {
+        method: 'POST',
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to start setup')
+      }
+
+      const data = await response.json()
+      setSetupUrl(data.url)
+    } catch (error) {
+      console.error('Setup error:', error)
+      // If setup fails, we'll fall back to showing the success panel
+    } finally {
+      setSetupLoading(false)
+    }
   }
 
   const copyToClipboard = (text: string) => {
@@ -50,13 +89,65 @@ export default function DeployPage() {
     URL.revokeObjectURL(url)
   }
 
+  const handleTunnelToggle = async () => {
+    if (!result) return
+
+    const currentStatus = tunnelStatus
+
+    if (currentStatus === 'connected') {
+      // Disconnect
+      setTunnelStatus('disconnecting')
+      try {
+        await fetch(`/api/instances/${result.serverName}/tunnel`, { method: 'DELETE' })
+        setTunnelStatus('disconnected')
+      } catch (error) {
+        setTunnelStatus('connected')
+        console.error('Failed to disconnect tunnel:', error)
+      }
+    } else {
+      // Connect
+      setTunnelStatus('connecting')
+      try {
+        const res = await fetch(`/api/instances/${result.serverName}/tunnel`, { method: 'POST' })
+        if (!res.ok) {
+          const data = await res.json()
+          throw new Error(data.error || 'Failed to start tunnel')
+        }
+        setTunnelStatus('connected')
+      } catch (error) {
+        setTunnelStatus('disconnected')
+        console.error('Failed to connect tunnel:', error)
+      }
+    }
+  }
+
+  const handleSetupComplete = async () => {
+    if (!result) return
+
+    try {
+      // Call the complete endpoint
+      const response = await fetch(`/api/instances/${result.serverName}/setup/complete`, {
+        method: 'POST',
+      })
+
+      await response.json()
+
+      // Show the success panel with SSH key download info
+      setSetupUrl(null)
+    } catch (error) {
+      console.error('Complete error:', error)
+      // Still clear setup state even if the API call fails
+      setSetupUrl(null)
+    }
+  }
+
   return (
     <div className="min-h-screen py-8">
       <div className="container mx-auto px-4">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
           <div className="mb-8">
-            <h1 className="text-4xl font-bold mb-2">Deploy Open Claw</h1>
+            <h1 className="text-4xl font-bold mb-2">Deploy OpenClaw</h1>
             <p className="text-gray-400">
               Automated VPS provisioning with real-time deployment logs
             </p>
@@ -96,7 +187,22 @@ export default function DeployPage() {
           {/* Deployment View */}
           {(isDeploying || result || error) && (
             <div className="max-w-5xl mx-auto">
-              {result ? (
+              {setupUrl && result ? (
+                <SetupTerminal
+                  url={setupUrl}
+                  instanceName={result.serverName}
+                  onComplete={handleSetupComplete}
+                  onTunnelToggle={handleTunnelToggle}
+                  tunnelStatus={tunnelStatus}
+                />
+              ) : setupLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-center">
+                    <Loader2 className="w-12 h-12 text-accent-purple animate-spin mx-auto mb-4" />
+                    <p className="text-gray-400">Starting setup terminal...</p>
+                  </div>
+                </div>
+              ) : result ? (
                 <SuccessPanel result={result} onCopy={copyToClipboard} onDownload={downloadPrivateKey} onReset={handleReset} />
               ) : error ? (
                 <ErrorPanel error={error} onReset={handleReset} />
@@ -210,7 +316,7 @@ export default function DeployPage() {
                       <div className="flex items-center gap-3">
                         <TerminalIcon className="w-5 h-5 text-accent-blue" />
                         <span className="font-medium">Deployment Console</span>
-                        <Badge variant="secondary">{logs.length} logs</Badge>
+                        <Badge variant="pending">{logs.length} logs</Badge>
                       </div>
                       {showConsole ? (
                         <ChevronUp className="w-5 h-5 text-gray-400" />
