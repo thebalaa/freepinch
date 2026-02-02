@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import Button from '@/components/ui/Button'
-import { Server, Shield, Cpu, Globe, Zap, Code, MessageCircle, Users } from 'lucide-react'
+import { Server, Shield, Cpu, Globe, Zap, Code, MessageCircle, Users, Github } from 'lucide-react'
 
 export default function Home() {
   return (
@@ -22,11 +22,12 @@ export default function Home() {
               Automated VPS provisioning with OpenClaw, Docker, and all dependencies. Just paste your Hetzner API token and launch.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/deploy">
-                <Button size="lg" className="min-w-[200px]">
-                  Launch Instance
+              <a href="https://github.com/etherai/roboclaw" target="_blank" rel="noopener noreferrer">
+                <Button size="lg" className="min-w-[200px] flex items-center gap-2">
+                  <Github className="w-5 h-5" />
+                  View on GitHub
                 </Button>
-              </Link>
+              </a>
               <a href="https://discord.gg/6ccxYf3c6q" target="_blank" rel="noopener noreferrer">
                 <Button variant="secondary" size="lg" className="min-w-[200px] flex items-center gap-2">
                   <MessageCircle className="w-5 h-5" />
