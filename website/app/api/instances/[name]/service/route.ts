@@ -64,17 +64,42 @@ export async function POST(request: Request, context: RouteContext) {
 
     // Run the service management command synchronously
     // This typically takes 2-5 seconds
-    const result = execSync(
-      `./run-hetzner.sh service ${name} ${openclawState}`,
-      {
-        cwd: PROJECT_ROOT,
-        env: { ...process.env },
-        timeout: 30000,  // 30 second timeout
-        encoding: 'utf-8',
-      }
-    )
+    let result: string
+    try {
+      console.log(`[Service] Running command from ${PROJECT_ROOT}: ./run-hetzner.sh service ${name} ${openclawState}`)
+      result = execSync(
+        `./run-hetzner.sh service ${name} ${openclawState}`,
+        {
+          cwd: PROJECT_ROOT,
+          env: {
+            ...process.env,
+            ANSIBLE_FORCE_COLOR: 'false',
+            ANSIBLE_NOCOLOR: 'true',
+            ANSIBLE_HOST_KEY_CHECKING: 'False',  // Skip host key checking
+            ANSIBLE_SSH_PIPELINING: 'True',      // Enable SSH pipelining for faster execution
+          },
+          timeout: 120000,  // 120 second timeout (2 minutes)
+          encoding: 'utf-8',
+          maxBuffer: 10 * 1024 * 1024,  // 10MB buffer for output
+        }
+      )
+    } catch (execError: any) {
+      // execSync throws if exit code is non-zero
+      console.error(`[Service] execSync error details:`, {
+        exitCode: execError.status,
+        signal: execError.signal,
+        stdout: execError.stdout,
+        stderr: execError.stderr,
+      })
+      const errorOutput = execError.stdout || execError.stderr || execError.message || 'Unknown error'
+      const cleanError = stripAnsiCodes(errorOutput)
+      console.error(`[Service] Error ${action} openclaw on ${name}:`, cleanError)
+      throw new Error(`Failed to ${action} service: ${cleanError}`)
+    }
 
-    console.log(`[Service] ${action} openclaw on ${name}:`, result)
+    // Strip ANSI codes from output
+    const cleanResult = stripAnsiCodes(result)
+    console.log(`[Service] ${action} openclaw on ${name}:`, cleanResult)
 
     // After the ansible command, verify the actual state via SSH
     const { ip, privateKey } = await getInstanceSSHDetails(name)
@@ -91,14 +116,24 @@ export async function POST(request: Request, context: RouteContext) {
     })
   } catch (error) {
     console.error('Error managing service:', error)
+    // Strip ANSI codes from error message before sending to frontend
+    const errorMessage = error instanceof Error ? stripAnsiCodes(error.message) : 'Failed to manage service'
     return Response.json(
-      { error: error instanceof Error ? error.message : 'Failed to manage service' },
+      { error: errorMessage },
       { status: 500 }
     )
   }
 }
 
 // --- Helper functions ---
+
+/**
+ * Strip ANSI color codes from text
+ */
+function stripAnsiCodes(text: string): string {
+  // eslint-disable-next-line no-control-regex
+  return text.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '')
+}
 
 async function getInstanceSSHDetails(name: string): Promise<{ ip: string; privateKey: string }> {
   const artifactPath = join(INSTANCES_DIR, `${name}.yml`)
