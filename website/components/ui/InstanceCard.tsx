@@ -68,6 +68,12 @@ export default function InstanceCard({ instance, onSetupClick, onDeleteClick, on
               variant="minimal"
               trigger={<MoreVertical className="w-4 h-4 text-gray-400" />}
               items={[
+                ...(instance.onboardingCompleted ? [{
+                  label: 'Repair',
+                  onClick: () => onReconfigureClick(instance.name),
+                  icon: <RefreshCw className="w-4 h-4" />,
+                  variant: 'default' as const,
+                }] : []),
                 {
                   label: isDeleting ? 'Deleting...' : 'Delete Instance',
                   onClick: () => onDeleteClick(instance.name),
@@ -212,7 +218,7 @@ export default function InstanceCard({ instance, onSetupClick, onDeleteClick, on
 
             {tunnelStatus === 'connected' && (
               <a
-                href="http://localhost:18789"
+                href={instance.gatewayToken ? `http://localhost:18789?token=${instance.gatewayToken}` : "http://localhost:18789"}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="px-4 py-2 bg-accent-cyan/10 hover:bg-accent-cyan/20 border border-accent-cyan/30 hover:border-accent-cyan/50 text-accent-cyan hover:text-accent-cyan rounded-lg transition-colors text-sm flex items-center gap-2 whitespace-nowrap"
@@ -222,15 +228,6 @@ export default function InstanceCard({ instance, onSetupClick, onDeleteClick, on
                 Gateway
               </a>
             )}
-
-            <button
-              onClick={() => onReconfigureClick(instance.name)}
-              className="px-4 py-2 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 hover:border-blue-500/50 text-blue-400 hover:text-blue-300 rounded-lg transition-colors text-sm flex items-center gap-2 whitespace-nowrap"
-              title="Reconfigure instance"
-            >
-              <RefreshCw className="w-4 h-4" />
-              Reconfigure
-            </button>
           </>
         )}
 
