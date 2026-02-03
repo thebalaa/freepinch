@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import Button from '@/components/ui/Button'
-import { Server, Shield, Cpu, Globe, Zap, Code, MessageCircle, Users, Github, Lock, History, Vault, Eye, FileCheck, Network } from 'lucide-react'
+import { Server, Shield, Cpu, Globe, Zap, Code, MessageCircle, Users, Github, Lock, History, Vault, Eye, FileCheck, Network, Twitter } from 'lucide-react'
 import React, { useState, useEffect } from 'react'
 
 export default function Home() {
@@ -38,6 +38,12 @@ export default function Home() {
                 <Button variant="secondary" size="lg" className="min-w-[200px] flex items-center gap-2">
                   <MessageCircle className="w-5 h-5" />
                   Join Discord
+                </Button>
+              </a>
+              <a href="https://x.com/RoboClawX" target="_blank" rel="noopener noreferrer">
+                <Button variant="secondary" size="lg" className="min-w-[200px] flex items-center gap-2">
+                  <Twitter className="w-5 h-5" />
+                  Follow on X
                 </Button>
               </a>
             </div>
@@ -292,6 +298,12 @@ export default function Home() {
         <div className="container mx-auto px-4 text-center text-gray-500 text-sm">
           <p className="mb-2">RoboClaw: Powered by <span className="text-accent-blue">ClawFleet</span> and <a href="https://github.com/etherai/openclaw" target="_blank" rel="noopener noreferrer" className="text-accent-purple hover:text-accent-blue transition-colors">OpenClaw</a>. Deploying OpenClaw since 2026.</p>
           <p className="text-gray-600">Made with Love by <a href="https://github.com/hintjen" target="_blank" rel="noopener noreferrer" className="text-accent-purple hover:text-accent-blue transition-colors">Hintjen</a>.</p>
+          <p className="mt-3">
+            <a href="https://x.com/RoboClawX" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-accent-purple hover:text-accent-blue transition-colors">
+              <Twitter className="w-4 h-4" />
+              Follow RoboClaw on X
+            </a>
+          </p>
         </div>
       </footer>
     </main>

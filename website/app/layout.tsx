@@ -46,6 +46,9 @@ export default function RootLayout({
                 <a href="https://discord.gg/8DaPXhRFfv" target="_blank" rel="noopener noreferrer" className="text-gray-300 hover:text-white transition-colors">
                   Discord
                 </a>
+                <a href="https://x.com/RoboClawX" target="_blank" rel="noopener noreferrer" className="text-gray-300 hover:text-white transition-colors">
+                  Follow on X
+                </a>
               </div>
             </div>
           </div>

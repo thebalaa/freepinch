@@ -1,5 +1,7 @@
 'use client'
 
+import { Twitter } from 'lucide-react'
+
 export default function Footer() {
   const currentYear = new Date().getFullYear()
 
@@ -56,10 +58,21 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Contact */}
+          {/* Contact & Social */}
           <div>
-            <h4 className="text-sm font-semibold text-white mb-3">Support</h4>
+            <h4 className="text-sm font-semibold text-white mb-3">Connect</h4>
             <ul className="space-y-2">
+              <li>
+                <a
+                  href="https://x.com/RoboClawX"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-gray-400 hover:text-accent-purple transition-colors inline-flex items-center gap-2"
+                >
+                  <Twitter className="w-4 h-4" />
+                  Follow on X
+                </a>
+              </li>
               <li>
                 <a
                   href="#"
@@ -76,15 +89,6 @@ export default function Footer() {
                   onClick={(e) => e.preventDefault()}
                 >
                   Report Issue
-                </a>
-              </li>
-              <li>
-                <a
-                  href="#"
-                  className="text-sm text-gray-400 hover:text-accent-purple transition-colors"
-                  onClick={(e) => e.preventDefault()}
-                >
-                  FAQ
                 </a>
               </li>
             </ul>
