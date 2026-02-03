@@ -21,3 +21,131 @@ body {
     text-wrap: balance;
   }
 }
+
+/* Blog content styles */
+.blog-content {
+  font-size: 1.125rem;
+  line-height: 1.75;
+}
+
+.blog-content h1,
+.blog-content h2,
+.blog-content h3,
+.blog-content h4,
+.blog-content h5,
+.blog-content h6 {
+  font-weight: 700;
+  color: #ffffff;
+  scroll-margin-top: 5rem;
+}
+
+.blog-content a {
+  color: #3b82f6;
+  text-decoration: underline;
+  transition: color 0.2s;
+}
+
+.blog-content a:hover {
+  color: #8b5cf6;
+}
+
+.blog-content code {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #8b5cf6;
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.blog-content pre {
+  background-color: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  overflow-x: auto;
+  margin: 1rem 0;
+}
+
+.blog-content pre code {
+  background-color: transparent;
+  padding: 0;
+  color: #d1d5db;
+  font-size: 0.875rem;
+}
+
+.blog-content ul,
+.blog-content ol {
+  margin: 1rem 0;
+  padding-left: 1.5rem;
+  color: #d1d5db;
+}
+
+.blog-content ul {
+  list-style-type: disc;
+}
+
+.blog-content ol {
+  list-style-type: decimal;
+}
+
+.blog-content li {
+  margin-bottom: 0.5rem;
+}
+
+.blog-content blockquote {
+  border-left: 4px solid #8b5cf6;
+  padding-left: 1rem;
+  font-style: italic;
+  color: #9ca3af;
+  margin: 1rem 0;
+}
+
+.blog-content img {
+  border-radius: 0.5rem;
+  margin: 1.5rem 0;
+  max-width: 100%;
+}
+
+.blog-content hr {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  margin: 2rem 0;
+}
+
+.blog-content p {
+  color: #d1d5db;
+  margin-bottom: 1rem;
+  line-height: 1.75;
+}
+
+.blog-content strong {
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.blog-content em {
+  font-style: italic;
+}
+
+.blog-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.5rem 0;
+}
+
+.blog-content th,
+.blog-content td {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0.75rem;
+  text-align: left;
+}
+
+.blog-content th {
+  background-color: rgba(255, 255, 255, 0.05);
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.blog-content td {
+  color: #d1d5db;
+}
