@@ -1,5 +1,7 @@
 # RoboClaw Deployment Automation
 
+> **Join the community:** [OpenClaw Discord](https://discord.gg/8DaPXhRFfv) | Follow [@RoboClawX](https://x.com/RoboClawX) for updates
+
 Automated deployment system for provisioning VPS instances and installing OpenClaw.
 
 **Two deployment modes:**

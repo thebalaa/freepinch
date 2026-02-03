@@ -1,5 +1,7 @@
 'use client'
 
+import { Twitter } from 'lucide-react'
+
 export default function Footer() {
   const currentYear = new Date().getFullYear()
 
@@ -10,10 +12,13 @@ export default function Footer() {
           {/* Brand */}
           <div>
             <h3 className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-accent-purple to-accent-blue mb-2">
-              RoboClaw Community Edition
+              RoboClaw
             </h3>
-            <p className="text-sm text-gray-400">
+            <p className="text-sm text-gray-400 mb-2">
               Open-source AI agent deployment platform
+            </p>
+            <p className="text-sm text-gray-400">
+              Built for and by the OpenClaw community
             </p>
           </div>
 
@@ -32,7 +37,7 @@ export default function Footer() {
               </li>
               <li>
                 <a
-                  href="https://github.com/etherai/roboclaw"
+                  href="https://github.com/hintjen/roboclaw"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-sm text-gray-400 hover:text-accent-purple transition-colors"
@@ -42,7 +47,7 @@ export default function Footer() {
               </li>
               <li>
                 <a
-                  href="https://discord.gg/6ccxYf3c6q"
+                  href="https://discord.gg/8DaPXhRFfv"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-sm text-gray-400 hover:text-accent-purple transition-colors"
@@ -53,10 +58,21 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Contact */}
+          {/* Contact & Social */}
           <div>
-            <h4 className="text-sm font-semibold text-white mb-3">Support</h4>
+            <h4 className="text-sm font-semibold text-white mb-3">Connect</h4>
             <ul className="space-y-2">
+              <li>
+                <a
+                  href="https://x.com/RoboClawX"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-gray-400 hover:text-accent-purple transition-colors inline-flex items-center gap-2"
+                >
+                  <Twitter className="w-4 h-4" />
+                  Follow on X
+                </a>
+              </li>
               <li>
                 <a
                   href="#"
@@ -75,15 +91,6 @@ export default function Footer() {
                   Report Issue
                 </a>
               </li>
-              <li>
-                <a
-                  href="#"
-                  className="text-sm text-gray-400 hover:text-accent-purple transition-colors"
-                  onClick={(e) => e.preventDefault()}
-                >
-                  FAQ
-                </a>
-              </li>
             </ul>
           </div>
         </div>
@@ -91,9 +98,14 @@ export default function Footer() {
         {/* Bottom Bar */}
         <div className="pt-6 border-t border-white/5">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-sm text-gray-500">
-              © {currentYear} RoboClaw Community Edition. All rights reserved.
-            </p>
+            <div className="flex flex-col items-center md:items-start gap-2">
+              <p className="text-sm text-gray-500">
+                © {currentYear} RoboClaw. All rights reserved.
+              </p>
+              <p className="text-xs text-gray-600">
+                This project is not officially affiliated with the OpenClaw project.
+              </p>
+            </div>
             <div className="flex gap-6">
               <a
                 href="#"
