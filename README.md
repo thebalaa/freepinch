@@ -9,29 +9,28 @@ Automated deployment system for provisioning VPS instances and installing OpenCl
 ## Quick Start - Deploy to Existing Server
 
 ```bash
-# 1. One-time setup (requires Python 3.12+)
-./setup.sh
+# One command to deploy OpenClaw and auto-onboard
+./run-deploy.sh <YOUR_SERVER_IP> -k ~/.ssh/your_key
 
-# 2. Create inventory from your server IP
-./create-inventory.sh <YOUR_SERVER_IP> inventory.ini
-
-# 3. Deploy OpenClaw and auto-onboard
-INSTANCE_NAME_OVERRIDE=my-server ./run-deploy.sh \
-  -k ~/.ssh/your_key \
-  -i inventory.ini
+# With custom instance name
+./run-deploy.sh <YOUR_SERVER_IP> -k ~/.ssh/your_key -n production
 
 # That's it! The script will:
+# - Auto-install dependencies if needed (Python 3.12+, Ansible, collections)
 # - Deploy OpenClaw + dependencies (~3-5 min)
 # - Create instance artifact
 # - Drop you into interactive onboarding wizard
 ```
 
-**What `./setup.sh` does:**
+**What the script does automatically:**
 - Detects Python 3.12+ (checks python3.12, python3, python, pyenv)
 - Creates virtual environment if needed
 - Installs all Python dependencies
 - Installs Ansible Hetzner collection
+- Generates temporary inventory from IP
 - Provides helpful errors if Python 3.12+ not found
+
+**No separate setup required!** The script handles everything automatically.
 
 ## Quick Start - Hetzner Cloud Provisioning
 
@@ -63,14 +62,14 @@ openclaw onboard --install-daemon
 #### Deploy with Auto-Onboard (Recommended)
 
 ```bash
-# Deploy to any server with SSH access
-# By default, automatically launches 'openclaw onboard' after deployment
-./run-deploy.sh -k <ssh-key> -i <inventory-file>
+# One-command deployment (recommended)
+./run-deploy.sh <IP> -k <ssh-key>
 
 # With custom instance name
-INSTANCE_NAME_OVERRIDE=production ./run-deploy.sh \
-  -k ~/.ssh/prod-key \
-  -i prod-inventory.ini
+./run-deploy.sh <IP> -k <ssh-key> -n production
+
+# Legacy: Using inventory file (still supported)
+./run-deploy.sh -k <ssh-key> -i <inventory-file>
 ```
 
 **What gets installed:**
@@ -87,16 +86,17 @@ INSTANCE_NAME_OVERRIDE=production ./run-deploy.sh \
 
 ```bash
 # Deploy without launching onboarding wizard
-./run-deploy.sh -k <key> -i <inventory> --skip-onboard
+./run-deploy.sh <IP> -k <key> --skip-onboard
 
 # Connect and onboard later
 ./connect-instance.sh <instance-name> onboard
 ```
 
-#### Create Inventory File
+#### Create Inventory File (Advanced)
 
 ```bash
-# Generate Ansible inventory from IP address
+# For advanced use cases with multiple servers
+# Most users should use direct IP deployment instead
 ./create-inventory.sh <IP> [output-file]
 
 # Example
@@ -452,25 +452,17 @@ rm instances/*_deleted.yml
 ### Deploy to Existing Server - Complete Example
 
 ```bash
-# 1. One-time setup (requires Python 3.12+)
-./setup.sh
-
-# 2. Create inventory from your server IP
-./create-inventory.sh 192.168.1.100 production.ini
-
-# 3. Deploy and auto-onboard
-INSTANCE_NAME_OVERRIDE=production ./run-deploy.sh \
-  -k ~/.ssh/prod-key \
-  -i production.ini
+# One command to deploy and auto-onboard
+./run-deploy.sh 192.168.1.100 -k ~/.ssh/prod-key -n production
 
 # The script will:
-# - Check prerequisites (Python 3.12+, Ansible, dependencies)
+# - Auto-install Python 3.12+, venv, Ansible, dependencies if needed
 # - Deploy OpenClaw + all dependencies
 # - Create artifact at ./instances/production.yml
 # - Automatically launch 'openclaw onboard' wizard
 # - Drop you into interactive configuration
 
-# 4. Later, reconnect if needed
+# Later, reconnect if needed
 ./connect-instance.sh production onboard
 ```
 
@@ -478,12 +470,10 @@ INSTANCE_NAME_OVERRIDE=production ./run-deploy.sh \
 
 ```bash
 # Server 1
-./create-inventory.sh 192.168.1.100 server1.ini
-INSTANCE_NAME_OVERRIDE=server1 ./run-deploy.sh -k key -i server1.ini
+./run-deploy.sh 192.168.1.100 -k ~/.ssh/key -n server1
 
 # Server 2
-./create-inventory.sh 192.168.1.101 server2.ini
-INSTANCE_NAME_OVERRIDE=server2 ./run-deploy.sh -k key -i server2.ini
+./run-deploy.sh 192.168.1.101 -k ~/.ssh/key -n server2
 
 # List all instances
 ls -la ./instances/
@@ -585,12 +575,8 @@ For issues with:
 
 **Deploy to existing server (recommended):**
 ```bash
-# One-time setup
-./setup.sh
-
-# Deploy with auto-onboard
-./create-inventory.sh <IP> inventory.ini
-INSTANCE_NAME_OVERRIDE=my-server ./run-deploy.sh -k ~/.ssh/key -i inventory.ini
+# One command - auto-installs dependencies, deploys, and onboards
+./run-deploy.sh <IP> -k ~/.ssh/key -n my-server
 # ↑ Automatically launches 'openclaw onboard' wizard
 ```
 

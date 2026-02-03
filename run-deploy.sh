@@ -4,112 +4,181 @@ set -e
 # Deploy OpenClaw to existing servers using SSH key and Ansible inventory
 #
 # Usage:
-#   ./run-deploy.sh --ssh-key <path> --inventory <path>
-#   ./run-deploy.sh -k <path> -i <path>
+#   ./run-deploy.sh <IP> --ssh-key <path> [options]
+#   ./run-deploy.sh <IP> -k <path> [options]
+#   ./run-deploy.sh -k <path> -i <path> [options]  (backward compatibility)
 #
 # Environment variables (alternative to flags):
 #   SSH_PRIVATE_KEY_PATH  Path to SSH private key
 #   INVENTORY_PATH        Path to Ansible inventory file
 #
 # Examples:
-#   ./run-deploy.sh -k ~/.ssh/id_ed25519 -i hosts.ini
-#   SSH_PRIVATE_KEY_PATH=./key INVENTORY_PATH=./hosts ./run-deploy.sh
+#   ./run-deploy.sh 192.168.1.100 -k ~/.ssh/id_ed25519
+#   ./run-deploy.sh 192.168.1.100 -k key -n production
+#   ./run-deploy.sh -k key -i hosts.ini  (backward compatible)
 
-# Function to check prerequisites
-check_prerequisites() {
-    local errors=0
+# Function to check Python version
+check_python_version() {
+    local python_cmd="$1"
 
-    echo "Checking prerequisites..."
+    if ! command -v "$python_cmd" &> /dev/null; then
+        return 1
+    fi
 
-    # Check if venv exists
-    if [ ! -d "venv" ]; then
-        echo "❌ Virtual environment not found"
-        echo "   → Run: python3 -m venv venv"
-        echo "   → Ensure you have Python 3.12+ installed"
-        echo "   → With pyenv: pyenv install 3.12.0 && ~/.pyenv/versions/3.12.0/bin/python3 -m venv venv"
-        errors=1
-    else
-        echo "✓ Virtual environment found"
+    # Try to get version, suppress errors
+    local version
+    if ! version=$($python_cmd --version 2>&1); then
+        return 1
+    fi
 
-        # Activate venv to check contents
-        source venv/bin/activate
+    version=$(echo "$version" | awk '{print $2}')
+    local major=$(echo "$version" | cut -d. -f1)
+    local minor=$(echo "$version" | cut -d. -f2)
 
-        # Check Python version
-        PYTHON_VERSION=$(python --version 2>&1 | awk '{print $2}')
-        PYTHON_MAJOR=$(echo "$PYTHON_VERSION" | cut -d. -f1)
-        PYTHON_MINOR=$(echo "$PYTHON_VERSION" | cut -d. -f2)
+    # Check if we got valid version numbers
+    if ! [[ "$major" =~ ^[0-9]+$ ]] || ! [[ "$minor" =~ ^[0-9]+$ ]]; then
+        return 1
+    fi
 
-        if [ "$PYTHON_MAJOR" -lt 3 ] || ([ "$PYTHON_MAJOR" -eq 3 ] && [ "$PYTHON_MINOR" -lt 12 ]); then
-            echo "❌ Python 3.12+ required, found: $PYTHON_VERSION"
-            echo "   → Recreate venv with Python 3.12+"
-            echo "   → Run: rm -rf venv && ~/.pyenv/versions/3.12.0/bin/python3 -m venv venv"
-            errors=1
-        else
-            echo "✓ Python $PYTHON_VERSION"
+    if [ "$major" -lt 3 ] || ([ "$major" -eq 3 ] && [ "$minor" -lt 12 ]); then
+        return 1
+    fi
+
+    return 0
+}
+
+# Function to find Python 3.12+
+find_python() {
+    # Try common Python commands
+    for cmd in python3.12 python3 python; do
+        if check_python_version "$cmd" 2>/dev/null; then
+            echo "$cmd"
+            return 0
         fi
+    done
 
-        # Check if ansible is installed
-        if ! command -v ansible-playbook &> /dev/null; then
-            echo "❌ Ansible not installed in virtual environment"
-            echo "   → Run: source venv/bin/activate && pip install -r requirements.txt"
-            errors=1
-        else
-            ANSIBLE_VERSION=$(ansible --version | head -1 | awk '{print $3}' | tr -d ']')
-            echo "✓ Ansible $ANSIBLE_VERSION"
-        fi
-
-        # Check if python-dateutil is installed
-        if ! python -c "import dateutil" 2>/dev/null; then
-            echo "❌ python-dateutil not installed"
-            echo "   → Run: source venv/bin/activate && pip install -r requirements.txt"
-            errors=1
-        else
-            echo "✓ python-dateutil installed"
+    # Check pyenv if available
+    if command -v pyenv &> /dev/null; then
+        if [ -f ~/.pyenv/versions/3.12.0/bin/python3 ]; then
+            local pyenv_python=~/.pyenv/versions/3.12.0/bin/python3
+            if check_python_version "$pyenv_python" 2>/dev/null; then
+                echo "$pyenv_python"
+                return 0
+            fi
         fi
     fi
 
+    return 1
+}
+
+# Function to auto-setup environment
+auto_setup() {
+    echo "Setting up environment..."
     echo ""
 
-    if [ $errors -ne 0 ]; then
-        echo "Prerequisites not met."
+    # Find Python 3.12+
+    echo "Checking for Python 3.12+..."
+    local python_cmd=""
+    if ! python_cmd=$(find_python); then
+        echo "❌ Error: Python 3.12+ not found"
         echo ""
-        echo "Run automatic setup:"
-        echo "  ./setup.sh"
+        echo "Install Python 3.12+ using one of these methods:"
         echo ""
-        echo "Or manual setup:"
-        echo "  1. ~/.pyenv/versions/3.12.0/bin/python3 -m venv venv"
-        echo "  2. source venv/bin/activate"
-        echo "  3. pip install -r requirements.txt"
-        echo "  4. ansible-galaxy collection install hetzner.hcloud"
+        echo "Using pyenv (recommended):"
+        echo "  pyenv install 3.12.0"
+        echo ""
+        echo "Using apt (Ubuntu/Debian):"
+        echo "  sudo apt update"
+        echo "  sudo apt install python3.12 python3.12-venv"
+        echo ""
+        echo "Using brew (macOS):"
+        echo "  brew install python@3.12"
+        echo ""
         exit 1
     fi
 
-    echo "✓ All prerequisites met"
+    PYTHON_CMD="$python_cmd"
+    PYTHON_VERSION=$($PYTHON_CMD --version 2>&1 | awk '{print $2}')
+    echo "✓ Found Python $PYTHON_VERSION"
+    echo ""
+
+    # Create venv if it doesn't exist
+    if [ ! -d "venv" ]; then
+        echo "Creating virtual environment..."
+        $PYTHON_CMD -m venv venv
+        echo "✓ Virtual environment created"
+        echo ""
+    fi
+
+    # Activate venv
+    source venv/bin/activate
+
+    # Check if dependencies are installed
+    local need_install=0
+    if ! command -v ansible-playbook &> /dev/null; then
+        need_install=1
+    elif ! python -c "import dateutil" 2>/dev/null; then
+        need_install=1
+    fi
+
+    # Install dependencies if needed
+    if [ $need_install -eq 1 ]; then
+        echo "Installing dependencies..."
+        pip install --upgrade pip -q
+        pip install -r requirements.txt
+        echo "✓ Dependencies installed"
+        echo ""
+    fi
+
+    # Check if Ansible collection is installed
+    if ! ansible-galaxy collection list | grep -q "hetzner.hcloud"; then
+        echo "Installing Ansible collections..."
+        ansible-galaxy collection install hetzner.hcloud
+        echo "✓ Ansible collections installed"
+        echo ""
+    fi
+
+    echo "✓ Environment ready"
     echo ""
 }
 
-# Run prerequisite checks
-check_prerequisites
+# Run auto-setup
+auto_setup
 
-# Activate virtualenv (already activated in check, but re-activate to be safe)
-if [ -d "venv" ]; then
-    source venv/bin/activate
-fi
+# Activate virtualenv
+source venv/bin/activate
 
 # Parse arguments
 SSH_KEY="${SSH_PRIVATE_KEY_PATH:-}"
 INVENTORY="${INVENTORY_PATH:-}"
+IP_ADDRESS=""
+INSTANCE_NAME="${INSTANCE_NAME_OVERRIDE:-}"
 AUTO_SETUP="onboard"  # Default: auto-onboard after deployment
 EXTRA_ARGS=()
+TEMP_INVENTORY=""
+
+# Check if first arg is an IP address (positional)
+if [[ $# -gt 0 ]] && [[ "$1" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
+    IP_ADDRESS="$1"
+    shift
+fi
 
 while [[ $# -gt 0 ]]; do
     case $1 in
+        --ip)
+            IP_ADDRESS="$2"
+            shift 2
+            ;;
         -k|--ssh-key)
             SSH_KEY="$2"
             shift 2
             ;;
         -i|--inventory)
             INVENTORY="$2"
+            shift 2
+            ;;
+        -n|--name)
+            INSTANCE_NAME="$2"
             shift 2
             ;;
         --skip-onboard|--no-onboard)
@@ -120,13 +189,16 @@ while [[ $# -gt 0 ]]; do
             echo "Deploy OpenClaw to existing servers using SSH key and Ansible inventory"
             echo ""
             echo "Usage:"
-            echo "  ./run-deploy.sh --ssh-key <path> --inventory <path> [options]"
-            echo "  ./run-deploy.sh -k <path> -i <path> [options]"
+            echo "  ./run-deploy.sh <IP> -k <ssh-key> [options]          # Direct IP (recommended)"
+            echo "  ./run-deploy.sh <IP> -k <ssh-key> -n <name>          # With instance name"
+            echo "  ./run-deploy.sh -k <ssh-key> -i <inventory>          # Inventory file (advanced)"
             echo ""
             echo "Options:"
-            echo "  -k, --ssh-key <path>       Path to SSH private key"
-            echo "  -i, --inventory <path>     Path to Ansible inventory file"
-            echo "  --skip-onboard             Skip automatic onboarding (default: auto-onboard)"
+            echo "  -k, --ssh-key <path>       Path to SSH private key (required)"
+            echo "  -n, --name <name>          Instance name (default: instance-<IP>)"
+            echo "  -i, --inventory <path>     Ansible inventory file (alternative to IP)"
+            echo "  --ip <address>             IP address (alternative to positional)"
+            echo "  --skip-onboard             Skip automatic onboarding"
             echo "  --no-onboard               Alias for --skip-onboard"
             echo "  -h, --help                 Show this help message"
             echo ""
@@ -136,10 +208,10 @@ while [[ $# -gt 0 ]]; do
             echo "  INSTANCE_NAME_OVERRIDE     Override instance name in artifact"
             echo ""
             echo "Examples:"
-            echo "  ./run-deploy.sh -k ~/.ssh/id_ed25519 -i hosts.ini"
-            echo "  ./run-deploy.sh -k ~/.ssh/id_ed25519 -i hosts.ini --skip-onboard"
-            echo "  ./run-deploy.sh -k key -i inventory.ini --tags docker,nodejs"
-            echo "  INSTANCE_NAME_OVERRIDE=my-server ./run-deploy.sh -k key -i hosts.ini"
+            echo "  ./run-deploy.sh 192.168.1.100 -k ~/.ssh/id_ed25519"
+            echo "  ./run-deploy.sh 192.168.1.100 -k ~/.ssh/key -n production"
+            echo "  ./run-deploy.sh 192.168.1.100 -k key -n prod --skip-onboard"
+            echo "  ./run-deploy.sh -k key -i hosts.ini  # Backward compatible"
             echo ""
             echo "Note: By default, 'openclaw onboard' launches automatically after deployment."
             echo "      Use --skip-onboard if you want to onboard later manually."
@@ -154,7 +226,7 @@ done
 
 # Validate inputs
 if [ -z "$SSH_KEY" ]; then
-    echo "Error: SSH key not provided. Use --ssh-key or set SSH_PRIVATE_KEY_PATH"
+    echo "Error: SSH key not provided. Use -k/--ssh-key or set SSH_PRIVATE_KEY_PATH"
     exit 1
 fi
 
@@ -163,13 +235,44 @@ if [ ! -f "$SSH_KEY" ]; then
     exit 1
 fi
 
-if [ -z "$INVENTORY" ]; then
-    echo "Error: Inventory not provided. Use --inventory or set INVENTORY_PATH"
-    exit 1
-fi
+# Auto-generate inventory if IP provided, otherwise use inventory file
+if [ -n "$IP_ADDRESS" ]; then
+    # Validate IP format
+    if ! echo "$IP_ADDRESS" | grep -qE '^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$'; then
+        echo "Error: Invalid IP address format: $IP_ADDRESS"
+        exit 1
+    fi
 
-if [ ! -f "$INVENTORY" ]; then
-    echo "Error: Inventory file not found: $INVENTORY"
+    # Generate instance name if not provided
+    if [ -z "$INSTANCE_NAME" ]; then
+        INSTANCE_NAME="instance-${IP_ADDRESS//./-}"
+    fi
+
+    # Create temporary inventory file in instances directory
+    mkdir -p ./instances
+    TEMP_INVENTORY="./instances/.temp-inventory-${INSTANCE_NAME}.ini"
+    cat > "$TEMP_INVENTORY" << EOF
+[servers]
+$IP_ADDRESS ansible_user=root
+EOF
+
+    INVENTORY="$TEMP_INVENTORY"
+    echo "Generated temporary inventory for: $IP_ADDRESS"
+    echo ""
+elif [ -n "$INVENTORY" ]; then
+    # Using inventory file - validate it exists
+    if [ ! -f "$INVENTORY" ]; then
+        echo "Error: Inventory file not found: $INVENTORY"
+        exit 1
+    fi
+else
+    echo "Error: Either IP address or inventory file required"
+    echo ""
+    echo "Usage:"
+    echo "  ./run-deploy.sh <IP> -k <ssh-key>           # Using IP"
+    echo "  ./run-deploy.sh -k <ssh-key> -i <inventory> # Using inventory"
+    echo ""
+    echo "Run with --help for more options"
     exit 1
 fi
 
@@ -195,6 +298,7 @@ if [ $ANSIBLE_EXIT_CODE -eq 0 ]; then
 
     # Parse inventory file to extract hosts
     # This handles simple INI format: "host ansible_host=ip" or just "ip"
+    FINAL_INSTANCE_NAME=""
     while IFS= read -r line; do
         # Skip comments and empty lines
         [[ "$line" =~ ^[[:space:]]*# ]] && continue
@@ -208,19 +312,21 @@ if [ $ANSIBLE_EXIT_CODE -eq 0 ]; then
         # Check if there's an ansible_host variable
         if echo "$line" | grep -q "ansible_host="; then
             IP=$(echo "$line" | grep -oP 'ansible_host=\K[^ ]+')
-            INSTANCE_NAME=$(echo "$HOST" | tr '.' '-' | tr '_' '-')
+            ARTIFACT_INSTANCE_NAME=$(echo "$HOST" | tr '.' '-' | tr '_' '-')
         else
             # Host is the IP
             IP="$HOST"
-            INSTANCE_NAME="instance-${IP//./-}"
+            ARTIFACT_INSTANCE_NAME="instance-${IP//./-}"
         fi
 
-        # Allow overriding instance name via environment variable
-        if [ -n "$INSTANCE_NAME_OVERRIDE" ]; then
-            INSTANCE_NAME="$INSTANCE_NAME_OVERRIDE"
+        # Use provided instance name, or INSTANCE_NAME_OVERRIDE, or derived name
+        if [ -n "$INSTANCE_NAME" ]; then
+            ARTIFACT_INSTANCE_NAME="$INSTANCE_NAME"
+        elif [ -n "$INSTANCE_NAME_OVERRIDE" ]; then
+            ARTIFACT_INSTANCE_NAME="$INSTANCE_NAME_OVERRIDE"
         fi
 
-        ARTIFACT_FILE="./instances/${INSTANCE_NAME}.yml"
+        ARTIFACT_FILE="./instances/${ARTIFACT_INSTANCE_NAME}.yml"
         TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
         # Get absolute path of SSH key
@@ -230,7 +336,7 @@ if [ $ANSIBLE_EXIT_CODE -eq 0 ]; then
         cat > "$ARTIFACT_FILE" << EOF
 # Instance deployed via run-deploy.sh on ${TIMESTAMP}
 instances:
-  - name: ${INSTANCE_NAME}
+  - name: ${ARTIFACT_INSTANCE_NAME}
     ip: ${IP}
     deployed_at: ${TIMESTAMP}
     deployment_method: run-deploy.sh
@@ -241,10 +347,17 @@ instances:
 EOF
 
         echo "   ✓ Created artifact: ${ARTIFACT_FILE}"
-        echo "   → Instance name: ${INSTANCE_NAME}"
+        echo "   → Instance name: ${ARTIFACT_INSTANCE_NAME}"
         echo "   → IP: ${IP}"
 
+        FINAL_INSTANCE_NAME="$ARTIFACT_INSTANCE_NAME"
+
     done < <(grep -v "^$" "$INVENTORY" 2>/dev/null || true)
+
+    # Clean up temporary inventory if created
+    if [ -n "$TEMP_INVENTORY" ] && [ -f "$TEMP_INVENTORY" ]; then
+        rm -f "$TEMP_INVENTORY"
+    fi
 
     echo ""
     echo "✅ Deployment complete!"
@@ -255,14 +368,19 @@ EOF
         echo "🚀 Launching OpenClaw interactive wizard..."
         echo ""
         sleep 1
-        ./connect-instance.sh "${INSTANCE_NAME}" "$AUTO_SETUP"
+        ./connect-instance.sh "${FINAL_INSTANCE_NAME}" "$AUTO_SETUP"
     else
         echo ""
         echo "To complete setup, run:"
-        echo "   ./connect-instance.sh ${INSTANCE_NAME} onboard"
+        echo "   ./connect-instance.sh ${FINAL_INSTANCE_NAME} onboard"
     fi
 
 else
+    # Clean up temporary inventory if created (even on failure)
+    if [ -n "$TEMP_INVENTORY" ] && [ -f "$TEMP_INVENTORY" ]; then
+        rm -f "$TEMP_INVENTORY"
+    fi
+
     echo ""
     echo "❌ Deployment failed with exit code: $ANSIBLE_EXIT_CODE"
     exit $ANSIBLE_EXIT_CODE
