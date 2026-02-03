@@ -1,8 +1,10 @@
 # RoboClaw
 
-> ⚠️ **UNDER ACTIVE DEVELOPMENT** — RoboClaw is currently under active development. The RoboClaw UI is coming soon! For now, you can deploy OpenClaw using the CLI method below.
+> 🚧 **PROJECT NOT FUNCTIONAL** — This project is currently in early development and is **not in a functional state**.
+>
+> **Want to get involved?** Join the [OpenClaw Discord community](https://discord.gg/openclaw) where active development is happening in the voice chat channels! This is where the community is building RoboClaw together.
 
-Deploy your own OpenClaw instance in minutes. Free, secure, and fully reversible.
+Deploy your own OpenClaw instance in minutes. Free, secure, and fully reversible. *(Coming soon)*
 
 ## Quick Start
 
@@ -81,10 +83,19 @@ openclaw onboard --install-daemon
 - **SSH Key Authentication** — Supports ed25519 and RSA keys
 - **Encrypted Credentials** — API tokens and passwords are stored securely
 
-## Community
+## Join the Community
 
+**🎙️ Active Development in Progress!**
+
+RoboClaw is being built live in the OpenClaw Discord community. Join us in the voice chat channels to:
+- Watch development happen in real-time
+- Contribute ideas and feedback
+- Help shape the project
+- Connect with other community members
+
+**Links:**
+- **Discord**: [discord.gg/openclaw](https://discord.gg/openclaw) — Join the voice chat!
 - **GitHub**: [github.com/hintjen/roboclaw](https://github.com/hintjen/roboclaw)
-- **Discord**: [discord.gg/8DaPXhRFfv](https://discord.gg/8DaPXhRFfv)
 - **Website**: [roboclaw.dev](https://roboclaw.dev)
 
 ## Coming Soon
@@ -105,7 +116,7 @@ See roboclaw/ for OpenClaw licensing.
 
 ## Support
 
-- For deployment issues, join our [Discord](https://discord.gg/8DaPXhRFfv)
+- For deployment issues, join our [Discord](https://discord.gg/openclaw)
 - For OpenClaw issues, see the [OpenClaw repository](https://github.com/openclaw/openclaw)
 
 ---
