@@ -2,7 +2,7 @@
 
 > 🚧 **PROJECT NOT FUNCTIONAL** — This project is currently in early development and is **not in a functional state**.
 >
-> **Want to get involved?** Join the [OpenClaw Discord community](https://discord.gg/openclaw) where active development is happening in the voice chat channels! This is where the community is building RoboClaw together.
+> **Want to get involved?** Join the [OpenClaw Discord community](https://discord.gg/8DaPXhRFfv) where active development is happening in the voice chat channels! This is where the community is building RoboClaw together.
 
 Deploy your own OpenClaw instance in minutes. Free, secure, and fully reversible. *(Coming soon)*
 
@@ -94,7 +94,7 @@ RoboClaw is being built live in the OpenClaw Discord community. Join us in the v
 - Connect with other community members
 
 **Links:**
-- **Discord**: [discord.gg/openclaw](https://discord.gg/openclaw) — Join the voice chat!
+- **Discord**: [discord.gg/8DaPXhRFfv](https://discord.gg/8DaPXhRFfv) — Join the voice chat!
 - **GitHub**: [github.com/hintjen/roboclaw](https://github.com/hintjen/roboclaw)
 - **Website**: [roboclaw.dev](https://roboclaw.dev)
 
@@ -116,7 +116,7 @@ See roboclaw/ for OpenClaw licensing.
 
 ## Support
 
-- For deployment issues, join our [Discord](https://discord.gg/openclaw)
+- For deployment issues, join our [Discord](https://discord.gg/8DaPXhRFfv)
 - For OpenClaw issues, see the [OpenClaw repository](https://github.com/openclaw/openclaw)
 
 ---
