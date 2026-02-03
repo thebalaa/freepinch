@@ -1,7 +1,90 @@
 #!/bin/bash
 set -e
 
-# Activate virtualenv
+# Function to check prerequisites
+check_prerequisites() {
+    local errors=0
+
+    echo "Checking prerequisites..."
+
+    # Check if venv exists
+    if [ ! -d "venv" ]; then
+        echo "❌ Virtual environment not found"
+        echo "   → Run: python3 -m venv venv"
+        echo "   → Ensure you have Python 3.12+ installed"
+        echo "   → With pyenv: pyenv install 3.12.0 && ~/.pyenv/versions/3.12.0/bin/python3 -m venv venv"
+        errors=1
+    else
+        echo "✓ Virtual environment found"
+
+        # Activate venv to check contents
+        source venv/bin/activate
+
+        # Check Python version
+        PYTHON_VERSION=$(python --version 2>&1 | awk '{print $2}')
+        PYTHON_MAJOR=$(echo "$PYTHON_VERSION" | cut -d. -f1)
+        PYTHON_MINOR=$(echo "$PYTHON_VERSION" | cut -d. -f2)
+
+        if [ "$PYTHON_MAJOR" -lt 3 ] || ([ "$PYTHON_MAJOR" -eq 3 ] && [ "$PYTHON_MINOR" -lt 12 ]); then
+            echo "❌ Python 3.12+ required, found: $PYTHON_VERSION"
+            echo "   → Recreate venv with Python 3.12+"
+            echo "   → Run: rm -rf venv && ~/.pyenv/versions/3.12.0/bin/python3 -m venv venv"
+            errors=1
+        else
+            echo "✓ Python $PYTHON_VERSION"
+        fi
+
+        # Check if ansible is installed
+        if ! command -v ansible-playbook &> /dev/null; then
+            echo "❌ Ansible not installed in virtual environment"
+            echo "   → Run: source venv/bin/activate && pip install -r requirements.txt"
+            errors=1
+        else
+            ANSIBLE_VERSION=$(ansible --version | head -1 | awk '{print $3}' | tr -d ']')
+            echo "✓ Ansible $ANSIBLE_VERSION"
+        fi
+
+        # Check if python-dateutil is installed
+        if ! python -c "import dateutil" 2>/dev/null; then
+            echo "❌ python-dateutil not installed"
+            echo "   → Run: source venv/bin/activate && pip install -r requirements.txt"
+            errors=1
+        else
+            echo "✓ python-dateutil installed"
+        fi
+
+        # Check if Hetzner Cloud collection is installed
+        if ! ansible-galaxy collection list | grep -q "hetzner.hcloud"; then
+            echo "❌ Hetzner Cloud Ansible collection not installed"
+            echo "   → Run: source venv/bin/activate && ansible-galaxy collection install hetzner.hcloud"
+            errors=1
+        else
+            HCLOUD_VERSION=$(ansible-galaxy collection list | grep hetzner.hcloud | awk '{print $2}')
+            echo "✓ Hetzner Cloud collection $HCLOUD_VERSION"
+        fi
+    fi
+
+    echo ""
+
+    if [ $errors -ne 0 ]; then
+        echo "Prerequisites not met. Please install missing dependencies."
+        echo ""
+        echo "Quick setup:"
+        echo "  1. ~/.pyenv/versions/3.12.0/bin/python3 -m venv venv"
+        echo "  2. source venv/bin/activate"
+        echo "  3. pip install -r requirements.txt"
+        echo "  4. ansible-galaxy collection install hetzner.hcloud"
+        exit 1
+    fi
+
+    echo "✓ All prerequisites met"
+    echo ""
+}
+
+# Run prerequisite checks
+check_prerequisites
+
+# Activate virtualenv (already activated in check, but re-activate to be safe)
 if [ -d "venv" ]; then
     source venv/bin/activate
 fi

@@ -14,6 +14,15 @@
     ssh_private_key_path: "{{ lookup('env', 'SSH_PRIVATE_KEY_PATH') | default('./hetzner_key', true) }}"
 
   tasks:
+    - name: Debug provisioning parameters
+      ansible.builtin.debug:
+        msg: |
+          🔍 Provisioning with:
+          Server Name: {{ server_name }}
+          Server Type: {{ server_type }}
+          Location: {{ location }}
+          Image: {{ image }}
+
     - name: Fail if HCLOUD_TOKEN is not set
       ansible.builtin.fail:
         msg: "Please set HCLOUD_TOKEN environment variable with your Hetzner API token"
@@ -30,7 +39,6 @@
         name: "{{ ssh_key_name }}"
         public_key: "{{ ssh_public_key }}"
         state: present
-        force: true  # Force update if key with same name exists but different public key
       register: ssh_key
 
     - name: Delete existing server if it exists (to force fresh deployment with new SSH key)
