@@ -28,6 +28,9 @@
    - `specs/clawctl-cli-spec.md` - CLI interface
    - `specs/docker-openclaw.md` - Docker containerization
    - `specs/clawctl-strategy.md` - Strategic direction
+   - `specs/openclaw-architecture.md` - OpenClaw system architecture
+   - `specs/testing-guide.md` - Testing and development guide
+   - `specs/troubleshooting-guide.md` - Deployment troubleshooting
    - `specs/deployment-workflow.md` - Legacy Ansible (historical only)
 
 3. **Check Project Memory:** `~/.claude/projects/-home-justin-Documents-RoboClaw/memory/MEMORY.md`
@@ -58,6 +61,10 @@
 - ✅ You need to understand deployment phases
 - ✅ You're uncertain about architecture
 - ✅ You need context for debugging
+- ✅ User asks about OpenClaw (what it is, how it works)
+- ✅ You need to test changes safely
+- ✅ Deployment fails and you need troubleshooting guidance
+- ✅ You're working with Gateway API or device pairing
 
 ### DON'T Read Specs When:
 - ❌ User asks you to fix a specific bug (read the code instead)
@@ -135,6 +142,12 @@ node dist/index.js deploy <IP> --key <path>
 ```bash
 # Requires real Ubuntu 24.04 VPS
 npx clawctl deploy <IP> --key <path> --verbose
+
+# See testing-guide.md for:
+# - Test server setup
+# - Testing workflows
+# - Debugging techniques
+# - Platform-specific testing
 ```
 
 ---
@@ -172,6 +185,9 @@ specs/
 ├── clawctl-cli-spec.md          # CLI interface
 ├── docker-openclaw.md           # Docker containerization
 ├── clawctl-strategy.md          # Strategic direction
+├── openclaw-architecture.md     # OpenClaw system architecture
+├── testing-guide.md             # Testing and development guide
+├── troubleshooting-guide.md     # Deployment troubleshooting
 └── deployment-workflow.md       # Legacy Ansible (historical)
 ```
 
@@ -243,9 +259,12 @@ Is it a concrete task?
 - **Technical Spec:** `specs/clawctl-spec.md`
 - **CLI Spec:** `specs/clawctl-cli-spec.md`
 - **Docker Spec:** `specs/docker-openclaw.md`
+- **OpenClaw Spec:** `specs/openclaw-architecture.md`
+- **Testing Guide:** `specs/testing-guide.md`
+- **Troubleshooting:** `specs/troubleshooting-guide.md`
 - **Memory:** `~/.claude/projects/-home-justin-Documents-RoboClaw/memory/MEMORY.md`
-- **Main Code:** `src/commands/deploy.ts`
-- **Package:** `package.json`
+- **Main Code:** `clawctl/src/commands/deploy.ts`
+- **Package:** `clawctl/package.json`
 
 ---
 

@@ -24,17 +24,22 @@ Use this to find the right spec(s) for common query types:
 
 | User Query Topic | Primary Spec | Also Check |
 |-----------------|--------------|------------|
-| **Deployment process, phases, error recovery** | clawctl-spec.md | deployment-workflow.md |
+| **What is OpenClaw, how does it work** | openclaw-architecture.md | docker-openclaw.md |
+| **OpenClaw services (CLI, Gateway)** | openclaw-architecture.md | docker-openclaw.md |
+| **Gateway API, device pairing** | openclaw-architecture.md | clawctl-spec.md (Auto-Connect) |
+| **Testing, development workflow** | testing-guide.md | - |
+| **Deployment errors, troubleshooting** | troubleshooting-guide.md | clawctl-spec.md (Error Handling) |
+| **Deployment process, phases, error recovery** | clawctl-spec.md | troubleshooting-guide.md |
 | **CLI commands, flags, usage** | clawctl-cli-spec.md | clawctl-spec.md |
-| **Docker setup, containers, images** | docker-openclaw.md | clawctl-spec.md (Phase 6-7) |
+| **Docker setup, containers, images** | docker-openclaw.md | openclaw-architecture.md |
 | **Strategy, why Node.js, goals** | clawctl-strategy.md | - |
 | **Old Ansible approach** | deployment-workflow.md | - |
 | **Configuration system (flags, env, files)** | clawctl-cli-spec.md (Config) | clawctl-spec.md (src/lib/config.ts) |
-| **Auto-connect feature** | clawctl-spec.md (Auto-Connect) | clawctl-cli-spec.md (deploy --no-auto-connect) |
-| **SSH operations, user setup** | clawctl-spec.md (SSH, Phase 4) | - |
+| **Auto-connect feature** | clawctl-spec.md (Auto-Connect) | openclaw-architecture.md (Gateway API) |
+| **SSH operations, user setup** | clawctl-spec.md (SSH, Phase 4) | troubleshooting-guide.md (Phase 1) |
 | **Template literals, Docker Compose variables** | clawctl-spec.md (Phase 7) | docker-openclaw.md |
 | **Instance artifacts** | clawctl-cli-spec.md (Artifacts) | clawctl-spec.md (Phase 9) |
-| **Idempotency, resume, state** | clawctl-spec.md (Idempotency) | - |
+| **Idempotency, resume, state** | clawctl-spec.md (Idempotency) | troubleshooting-guide.md (Recovery) |
 | **Development vs production mode** | docker-openclaw.md (Deployment Modes) | - |
 | **TypeScript modules, architecture** | clawctl-spec.md (Architecture) | - |
 
@@ -153,6 +158,78 @@ Use this to find the right spec(s) for common query types:
 
 ---
 
+### 6. openclaw-architecture.md - OpenClaw System Architecture
+
+**Read this for:** Understanding what OpenClaw is and how its components work
+
+**Key Topics:**
+- What OpenClaw is (AI assistant platform)
+- Two-service architecture (CLI + Gateway)
+- Gateway API commands and device pairing system
+- Configuration file structure (`~/.openclaw/openclaw.json`)
+- Onboarding process internals
+- Container architecture and security
+- Service communication patterns
+- Health checks and monitoring
+
+**When to read:**
+- Understanding what clawctl deploys
+- Working with auto-connect or pairing features
+- Implementing gateway interactions
+- Debugging OpenClaw service issues
+- Understanding onboarding wizard
+- Working with OpenClaw configuration
+
+---
+
+### 7. testing-guide.md - Testing and Development Guide
+
+**Read this for:** How to safely test clawctl changes
+
+**Key Topics:**
+- Development environment setup
+- Test server setup (VPS providers, snapshots)
+- Testing workflows (full deployment, individual phases)
+- Debugging techniques (verbose mode, state inspection)
+- Testing idempotency and resume capability
+- Platform-specific testing (WSL, macOS, Linux)
+- Testing checklists and scenarios
+- Best practices for safe testing
+
+**When to read:**
+- Before implementing new features
+- Testing bug fixes
+- Setting up development environment
+- Understanding how to debug deployments
+- Learning testing workflows
+- Preparing for release
+
+---
+
+### 8. troubleshooting-guide.md - Deployment Troubleshooting
+
+**Read this for:** Diagnosing and fixing deployment failures
+
+**Key Topics:**
+- Quick diagnosis table (symptom → solution)
+- Phase-by-phase troubleshooting (all 11 phases)
+- Common error categories and solutions
+- Recovery strategies (--force, --clean, manual cleanup)
+- State file manipulation
+- Platform-specific issues
+- Debugging commands and techniques
+- When to seek help
+
+**When to read:**
+- Deployment fails or hangs
+- Errors during any phase
+- Recovering from failed deployment
+- Understanding error messages
+- Learning what can go wrong
+- Supporting users with issues
+
+---
+
 ## Topic Index (Alphabetical)
 
 Quickly find where specific topics are covered:
@@ -161,9 +238,14 @@ Quickly find where specific topics are covered:
 |-------|------------------|---------------|
 | **Ansible (old approach)** | deployment-workflow.md | Entire document |
 | **Architecture (modules)** | clawctl-spec.md | Architecture section |
+| **Architecture (OpenClaw)** | openclaw-architecture.md | Architecture Overview |
 | **Artifacts (instances/)** | clawctl-cli-spec.md | Instance Artifacts |
 | **Auto-connect feature** | clawctl-spec.md | Auto-Connect to Dashboard |
 | **Browser opening** | clawctl-spec.md | Auto-Connect section |
+| **Debugging deployments** | testing-guide.md | Debugging Techniques |
+| **Debugging techniques** | troubleshooting-guide.md | General Troubleshooting |
+| **Development workflow** | testing-guide.md | Testing Workflow |
+| **Device pairing** | openclaw-architecture.md | Device Pairing System |
 | **CLI commands** | clawctl-cli-spec.md | All command sections |
 | **Configuration files** | clawctl-cli-spec.md | Configuration section |
 | **Container user (non-root)** | docker-openclaw.md | Security Considerations |
@@ -180,6 +262,7 @@ Quickly find where specific topics are covered:
 | **ES Modules** | clawctl-spec.md | Package Structure |
 | **Exit codes** | clawctl-cli-spec.md | Per-command sections |
 | **Flags (CLI)** | clawctl-cli-spec.md | Per-command options |
+| **Gateway API** | openclaw-architecture.md | Gateway Service Details |
 | **Gateway operations** | clawctl-cli-spec.md | Gateway Operations |
 | **Health checks** | docker-openclaw.md | Container Architecture |
 | **Idempotency** | clawctl-spec.md | Idempotency & Error Recovery |
@@ -187,7 +270,11 @@ Quickly find where specific topics are covered:
 | **Instance management** | clawctl-cli-spec.md | Instance Management |
 | **Naming conventions** | clawctl-cli-spec.md | deploy command |
 | **Node.js (why?)** | clawctl-strategy.md | Motivation |
+| **Onboarding internals** | openclaw-architecture.md | CLI Service Details |
 | **Onboarding wizard** | clawctl-spec.md | Phase 8: Interactive Onboarding |
+| **OpenClaw (what is it)** | openclaw-architecture.md | Overview |
+| **OpenClaw CLI service** | openclaw-architecture.md | CLI Service Details |
+| **OpenClaw Gateway service** | openclaw-architecture.md | Gateway Service Details |
 | **Pairing auto-approval** | clawctl-spec.md | Auto-Connect section |
 | **Phases (deployment)** | clawctl-spec.md | Deployment Flow |
 | **PTY sessions** | clawctl-spec.md | SSH Operations > PTY |
@@ -202,6 +289,9 @@ Quickly find where specific topics are covered:
 | **State file** | clawctl-spec.md | Resume Detection Strategy |
 | **Strategy** | clawctl-strategy.md | Entire document |
 | **Template literals** | clawctl-spec.md | Phase 7: Upload Docker Compose |
+| **Test server setup** | testing-guide.md | Test Server Setup |
+| **Testing** | testing-guide.md | Entire document |
+| **Troubleshooting** | troubleshooting-guide.md | Entire document |
 | **TypeScript** | clawctl-spec.md | Package Structure |
 | **UID/GID handling** | clawctl-spec.md | Phase 4: Setup Deployment User |
 | **User setup** | clawctl-spec.md | Phase 4: Setup Deployment User |
@@ -278,6 +368,37 @@ Here are example user queries mapped to which spec(s) to read:
 **Also:** clawctl-spec.md (Phase 8: Interactive Onboarding)
 **Reasoning:** CLI flag in cli-spec, implementation in spec
 
+### Query: "What is OpenClaw and how does it work?"
+**Read:** openclaw-architecture.md (Overview)
+**Reasoning:** Comprehensive explanation of OpenClaw system
+
+### Query: "How does device pairing work in the gateway?"
+**Read:** openclaw-architecture.md (Device Pairing System)
+**Also:** clawctl-spec.md (Auto-Connect to Dashboard)
+**Reasoning:** Pairing internals in architecture spec, auto-approval in clawctl spec
+
+### Query: "How do I test my clawctl changes safely?"
+**Read:** testing-guide.md (Testing Workflow)
+**Reasoning:** Complete testing workflow and best practices
+
+### Query: "My deployment failed at Phase 3, how do I fix it?"
+**Read:** troubleshooting-guide.md (Phase 3: Install Docker)
+**Also:** testing-guide.md (Debugging Techniques)
+**Reasoning:** Specific phase troubleshooting in guide, debugging strategies in testing
+
+### Query: "What Gateway API commands are available?"
+**Read:** openclaw-architecture.md (Gateway Service Details)
+**Reasoning:** Complete Gateway API reference
+
+### Query: "How do I set up a test VPS for development?"
+**Read:** testing-guide.md (Test Server Setup)
+**Reasoning:** VPS providers, setup instructions, and snapshots
+
+### Query: "Deployment hangs during onboarding, what should I do?"
+**Read:** troubleshooting-guide.md (Phase 8: Onboarding)
+**Also:** openclaw-architecture.md (CLI Service Details)
+**Reasoning:** Troubleshooting in guide, onboarding internals in architecture
+
 ---
 
 ## Reading Strategy for Common Tasks
@@ -293,9 +414,9 @@ Here are example user queries mapped to which spec(s) to read:
 3. **Reference:** clawctl-spec.md (Architecture) for modules to use
 
 ### Task: Debugging deployment failure
-1. **Start:** clawctl-spec.md (Idempotency & Error Recovery)
-2. **Check:** Deployment Flow for phase details
-3. **Reference:** Error Handling section for error categories
+1. **Start:** troubleshooting-guide.md (Quick Diagnosis)
+2. **Check:** Phase-specific troubleshooting for your phase
+3. **Reference:** clawctl-spec.md (Error Handling) for implementation details
 
 ### Task: Understanding Docker setup
 1. **Start:** docker-openclaw.md (Architecture Overview)
@@ -312,6 +433,21 @@ Here are example user queries mapped to which spec(s) to read:
 2. **Check:** Design Principles
 3. **Reference:** clawctl-spec.md for current implementation
 
+### Task: Understanding OpenClaw architecture
+1. **Start:** openclaw-architecture.md (Overview)
+2. **Check:** Service architecture diagrams
+3. **Reference:** docker-openclaw.md for containerization details
+
+### Task: Testing a new feature
+1. **Start:** testing-guide.md (Testing Workflow)
+2. **Check:** Testing Specific Features section
+3. **Reference:** troubleshooting-guide.md for what could go wrong
+
+### Task: Recovering from deployment failure
+1. **Start:** troubleshooting-guide.md (General Troubleshooting Steps)
+2. **Check:** Specific phase troubleshooting
+3. **Reference:** testing-guide.md (Debugging Techniques) for inspection commands
+
 ---
 
 ## Document Maintenance
@@ -323,11 +459,11 @@ Here are example user queries mapped to which spec(s) to read:
 - Topic coverage changes → Update Topic Index
 
 **Verification checklist:**
-- [ ] All 5 spec files represented in Overview
-- [ ] Routing table covers major query categories
-- [ ] Topic index is alphabetically sorted
-- [ ] Query examples map to correct specs
-- [ ] Cross-references are accurate
+- [x] All 8 spec files represented in Overview
+- [x] Routing table covers major query categories
+- [x] Topic index is alphabetically sorted
+- [x] Query examples map to correct specs
+- [x] Cross-references are accurate
 
 ---
 
@@ -339,6 +475,9 @@ Here are example user queries mapped to which spec(s) to read:
   - `docker-openclaw.md` - Docker containerization
   - `clawctl-strategy.md` - Strategic direction
   - `deployment-workflow.md` - Legacy Ansible approach
+  - `openclaw-architecture.md` - OpenClaw system architecture
+  - `testing-guide.md` - Testing and development guide
+  - `troubleshooting-guide.md` - Deployment troubleshooting
 
 - **Memory:**
   - `~/.claude/projects/-home-justin-Documents-RoboClaw/memory/MEMORY.md` - Project memory notes
