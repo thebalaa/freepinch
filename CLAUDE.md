@@ -18,7 +18,7 @@
 
 **If the user asks a question or you need to understand the codebase:**
 
-1. **Read the Primer First:** `PRIMER.md`
+1. **Read the Navigation Guide First:** `.llm/NAVIGATION.md`
    - This routing document will tell you which spec(s) to read
    - It contains a quick routing table, topic index, and query examples
    - Reading this first saves time vs. reading all specs
@@ -73,7 +73,7 @@
 - ❌ You already understand what to do (just do it)
 
 ### Efficient Spec Reading:
-1. **Start with PRIMER.md** - Find the right spec(s)
+1. **Start with `.llm/NAVIGATION.md`** - Find the right spec(s)
 2. **Read targeted sections** - Use the topic index
 3. **Cross-reference as needed** - Specs link to each other
 4. **Update memory** - Note any discrepancies or learnings
@@ -180,7 +180,6 @@ src/
 ### Specifications (Reference Documentation)
 ```
 specs/
-├── PRIMER.md                    # START HERE - Routing guide
 ├── clawctl-spec.md              # Technical implementation
 ├── clawctl-cli-spec.md          # CLI interface
 ├── docker-openclaw.md           # Docker containerization
@@ -189,6 +188,17 @@ specs/
 ├── testing-guide.md             # Testing and development guide
 ├── troubleshooting-guide.md     # Deployment troubleshooting
 └── deployment-workflow.md       # Legacy Ansible (historical)
+```
+
+### LLM Navigation & Tools
+```
+.llm/
+├── NAVIGATION.md                # START HERE - Spec routing guide
+└── prompts/                     # Prompts for generating specs
+    ├── README.md
+    ├── openclaw-architecture-prompt.md
+    ├── testing-guide-prompt.md
+    └── troubleshooting-guide-prompt.md
 ```
 
 ### Instance Artifacts
@@ -244,7 +254,7 @@ Is it a concrete task?
     |
    No → Is it a question/explanation request?
     ↓
-   Yes → Read PRIMER.md
+   Yes → Read .llm/NAVIGATION.md
     |    Follow routing to relevant spec(s)
     |    Answer based on spec content
     |
@@ -255,13 +265,14 @@ Is it a concrete task?
 
 ## Quick Reference Links
 
-- **Start Here:** `PRIMER.md`
+- **Start Here:** `.llm/NAVIGATION.md` - Spec routing guide
 - **Technical Spec:** `specs/clawctl-spec.md`
 - **CLI Spec:** `specs/clawctl-cli-spec.md`
 - **Docker Spec:** `specs/docker-openclaw.md`
 - **OpenClaw Spec:** `specs/openclaw-architecture.md`
 - **Testing Guide:** `specs/testing-guide.md`
 - **Troubleshooting:** `specs/troubleshooting-guide.md`
+- **Spec Prompts:** `.llm/prompts/` - LLM prompts for generating specs
 - **Memory:** `~/.claude/projects/-home-justin-Documents-RoboClaw/memory/MEMORY.md`
 - **Main Code:** `clawctl/src/commands/deploy.ts`
 - **Package:** `clawctl/package.json`
