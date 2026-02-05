@@ -18,7 +18,7 @@
 
 **If the user asks a question or you need to understand the codebase:**
 
-1. **Read the Primer First:** `specs/PRIMER.md`
+1. **Read the Primer First:** `PRIMER.md`
    - This routing document will tell you which spec(s) to read
    - It contains a quick routing table, topic index, and query examples
    - Reading this first saves time vs. reading all specs
@@ -228,7 +228,7 @@ Is it a concrete task?
     |
    No → Is it a question/explanation request?
     ↓
-   Yes → Read specs/PRIMER.md
+   Yes → Read PRIMER.md
     |    Follow routing to relevant spec(s)
     |    Answer based on spec content
     |
@@ -239,7 +239,7 @@ Is it a concrete task?
 
 ## Quick Reference Links
 
-- **Start Here:** `specs/PRIMER.md`
+- **Start Here:** `PRIMER.md`
 - **Technical Spec:** `specs/clawctl-spec.md`
 - **CLI Spec:** `specs/clawctl-cli-spec.md`
 - **Docker Spec:** `specs/docker-openclaw.md`
