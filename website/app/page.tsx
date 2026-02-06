@@ -19,7 +19,7 @@ export default function Home() {
         <div className="container mx-auto px-4 py-16 relative z-10">
           <div className="max-w-4xl mx-auto text-center">
             <div className="inline-block px-4 py-2 mb-6 bg-white/5 backdrop-blur-sm border border-white/10 rounded-full text-sm text-gray-300">
-              Powered by ClawFleet and OpenClaw
+              Powered by OpenClaw
             </div>
             <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-white via-white to-gray-400">
               Launch OpenClaw Without Getting Pinched
@@ -296,7 +296,7 @@ export default function Home() {
       {/* Footer */}
       <footer className="border-t border-white/10 py-12">
         <div className="container mx-auto px-4 text-center text-gray-500 text-sm">
-          <p className="mb-2">RoboClaw: Powered by <span className="text-accent-blue">ClawFleet</span> and <a href="https://github.com/etherai/openclaw" target="_blank" rel="noopener noreferrer" className="text-accent-purple hover:text-accent-blue transition-colors">OpenClaw</a>. Deploying OpenClaw since 2026.</p>
+          <p className="mb-2">RoboClaw: Powered by <a href="https://github.com/etherai/openclaw" target="_blank" rel="noopener noreferrer" className="text-accent-purple hover:text-accent-blue transition-colors">OpenClaw</a>. Deploying OpenClaw since 2026.</p>
           <p className="text-gray-600">Made with Love by <a href="https://github.com/hintjen" target="_blank" rel="noopener noreferrer" className="text-accent-purple hover:text-accent-blue transition-colors">Hintjen</a>.</p>
           <p className="mt-3">
             <a href="https://x.com/RoboClawX" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-accent-purple hover:text-accent-blue transition-colors">
